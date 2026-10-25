@@ -1,0 +1,14 @@
+# Local Postgres for development. Production uses Neon.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: flitz
+      POSTGRES_PASSWORD: flitz
+      POSTGRES_DB: studio
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:

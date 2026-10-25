@@ -1,0 +1,151 @@
+/* ---------- Status dot ---------- */
+
+.dot {
+  display: inline-block;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--muted-dot);
+}
+.dot[data-status="up"] {
+  background: var(--ok);
+  box-shadow: 0 0 0 5px var(--ok-soft);
+}
+.dot[data-status="down"] {
+  background: var(--danger);
+  box-shadow: 0 0 0 5px var(--danger-soft);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.dot[data-status="unknown"] {
+  background: transparent;
+  border: 2px dashed var(--ink-faint);
+}
+
+@keyframes pulse {
+  50% {
+    box-shadow: 0 0 0 9px var(--danger-soft);
+  }
+}
+
+/* ---------- Site card ---------- */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s;
+}
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.card[data-status="down"] {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--line));
+  background: linear-gradient(var(--danger-soft), var(--danger-soft)), var(--card);
+}
+.card[data-status="off"] {
+  box-shadow: none;
+  background: transparent;
+  border-style: dashed;
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.cardTop > :last-child {
+  margin-top: 8px;
+}
+
+.cardTitle {
+  min-width: 0;
+}
+.cardTitle h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.5rem;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+}
+.host {
+  display: block;
+  color: var(--ink-faint);
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusLine {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+}
+.card[data-status="up"] .statusLine {
+  color: var(--ok);
+}
+
+.downNote {
+  margin: 0;
+  font-weight: 700;
+  color: var(--danger);
+}
+.downNote span {
+  display: block;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  margin: var(--space-2) 0 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+.stats dt {
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+.stats dd {
+  margin: 0;
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+.stats small {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+  margin-left: 1px;
+}
+.stats dd[data-warn] {
+  color: var(--danger);
+}
+
+.checked {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+
+/* ---------- Check now spinner ---------- */
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

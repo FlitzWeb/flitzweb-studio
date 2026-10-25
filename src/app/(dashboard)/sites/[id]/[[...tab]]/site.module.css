@@ -1,0 +1,66 @@
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.head > :first-child {
+  margin-left: 5px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2rem, 6vw, 3rem);
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+
+.headText {
+  flex: 1;
+  min-width: 0;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: var(--space-1) 0 0;
+  font-size: 0.95rem;
+}
+.meta a {
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.meta a:hover {
+  color: var(--brand-deep);
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-5);
+  margin-bottom: var(--space-6);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tab {
+  padding: var(--space-3) 0;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-soft);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.tab:hover {
+  color: var(--ink);
+}
+.tab[aria-current="page"] {
+  color: var(--ink);
+  border-image: var(--grad) 1;
+  border-bottom-width: 2px;
+  border-bottom-style: solid;
+}

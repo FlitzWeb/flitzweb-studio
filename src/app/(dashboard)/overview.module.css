@@ -1,0 +1,35 @@
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.title {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.25rem, 7vw, 3.5rem);
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+.title[data-down] {
+  color: var(--danger);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: var(--space-4);
+}
+
+.empty {
+  color: var(--ink-soft);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-2);
+}

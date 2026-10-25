@@ -1,0 +1,129 @@
+.muted {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.section {
+  margin-top: var(--space-6);
+}
+
+.sectionHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.sectionHead h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.5rem;
+}
+.sectionHead > div {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* ---------- Rows ---------- */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-4) var(--space-5);
+}
+.item + .item {
+  border-top: 1px solid var(--line);
+}
+.item[data-status="overdue"] {
+  background: var(--danger-soft);
+}
+.item[data-status="paid"],
+.item[data-status="stopped"] {
+  color: var(--ink-soft);
+}
+.item > :last-child:not(.amount) {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+@media (min-width: 620px) {
+  .item {
+    grid-template-columns: 1fr auto auto;
+  }
+  .item > :last-child:not(.amount) {
+    grid-column: auto;
+  }
+}
+
+.itemMain {
+  min-width: 0;
+}
+
+.itemTitle {
+  display: block;
+  font-weight: 600;
+  text-decoration: none;
+}
+.itemTitle:hover {
+  color: var(--brand-deep);
+}
+.itemTitle strong {
+  font-weight: 700;
+}
+
+.itemMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: 2px;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}
+
+.amount {
+  font-size: 1.35rem;
+  white-space: nowrap;
+  text-align: right;
+}
+.amount small {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+}
+.item[data-status="overdue"] .amount {
+  color: var(--danger);
+}
+
+.pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--paper-2);
+  color: var(--ink-soft);
+}
+.pill[data-status="overdue"] {
+  background: var(--danger);
+  color: #fff;
+}
+.pill[data-status="paid"] {
+  background: var(--ok-soft);
+  color: var(--ok);
+}

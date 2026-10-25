@@ -4,21 +4,43 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "npm run build:tracker",
     "build": "next build",
+    "build:tracker": "esbuild src/tracker/t.ts --bundle --minify --target=es2020 --format=iife --outfile=public/t.js",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx src/db/seed.ts",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "detect-browser": "^5.3.0",
+    "drizzle-orm": "^0.45.4",
+    "isbot": "^5.2.2",
+    "jose": "^6.2.13",
     "next": "16.4.3",
+    "postgres": "^3.4.9",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "recharts": "^3.10.1",
+    "resend": "^6.34.1",
+    "server-only": "^0.0.1",
+    "ua-parser-js": "^1.0.41",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/ua-parser-js": "^0.7.39",
+    "dotenv": "^18.0.9",
+    "drizzle-kit": "^0.31.11",
+    "esbuild": "^0.28.2",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }

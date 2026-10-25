@@ -1,0 +1,280 @@
+.panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.kind {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.35rem;
+}
+
+.muted {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.summary {
+  margin: 0;
+  color: var(--ink-soft);
+}
+.summary strong {
+  font-size: 1.6rem;
+  color: var(--ink);
+  margin-right: 4px;
+}
+
+.stepNo {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--paper-2);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* ---------- Funnel ---------- */
+
+.funnel {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+.funnel li {
+  display: grid;
+  grid-template-columns: minmax(0, 14em) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+.funnelLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+  overflow: hidden;
+}
+.funnelLabel span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.funnelBar {
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--paper-2);
+  overflow: hidden;
+}
+.funnelBar span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  background: var(--chart-line);
+}
+.funnelNums {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.funnelNums strong {
+  font-size: 1.2rem;
+  color: var(--ink);
+}
+.drop {
+  color: var(--danger);
+}
+@media (max-width: 619px) {
+  .funnel li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .funnelBar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+/* ---------- Journey ---------- */
+
+.journeys {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.journeys li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--line);
+}
+.path {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.pathStep {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--paper-2);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+.pathStep[data-event] {
+  background: var(--ok-soft);
+  color: var(--ok);
+  font-weight: 600;
+}
+.arrow {
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+}
+.journeyCount {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  white-space: nowrap;
+}
+.journeyCount small {
+  color: var(--ink-faint);
+}
+
+/* ---------- Retention ---------- */
+
+.retentionWrap {
+  overflow-x: auto;
+}
+.retention {
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: 0.8rem;
+}
+.retention th {
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-align: left;
+  white-space: nowrap;
+  padding: 4px 8px;
+}
+.retention td {
+  min-width: 3.4em;
+  padding: 6px 4px;
+  text-align: center;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Goal ---------- */
+
+.goal {
+  display: grid;
+  gap: var(--space-3);
+}
+.goalBar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--paper-2);
+  overflow: hidden;
+}
+.goalBar span {
+  display: block;
+  height: 100%;
+  background: var(--grad);
+}
+
+/* ---------- Form ---------- */
+
+.typePicker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: var(--space-2);
+}
+.typeOption {
+  display: grid;
+  gap: 4px;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  text-align: left;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.typeOption span {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.typeOption[aria-checked="true"] {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 20%, transparent);
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.steps li {
+  display: grid;
+  grid-template-columns: auto 8em minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+@media (max-width: 519px) {
+  .steps li {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .steps li select {
+    grid-column: 2;
+  }
+  .steps li input {
+    grid-column: 2;
+  }
+}
+
+.list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+.empty {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}

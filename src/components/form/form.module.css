@@ -1,0 +1,68 @@
+.form {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 720px;
+}
+
+.section {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+.section h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.25rem;
+}
+
+.row {
+  display: grid;
+  gap: var(--space-4);
+}
+@media (min-width: 620px) {
+  .row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+.footer > div {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.title {
+  margin: 0 0 var(--space-5);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2rem, 6vw, 2.75rem);
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+
+.danger {
+  display: flex;
+  justify-content: flex-end;
+  max-width: 720px;
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--line);
+}
+
+.note {
+  max-width: 720px;
+  margin: var(--space-4) 0 0;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+}

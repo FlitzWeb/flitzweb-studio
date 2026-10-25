@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Minified build output of src/tracker/t.ts.
+    "public/t.js",
   ]),
 ]);
 

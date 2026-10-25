@@ -1,0 +1,48 @@
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--tile-min, 150px)), 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.tile {
+  padding: var(--space-3) clamp(var(--space-2), 2.5vw, var(--space-4));
+  background: var(--paper);
+  border-radius: var(--radius-md);
+  min-width: 0;
+}
+.tile[data-size="lg"] {
+  padding: var(--space-4);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.tile dt {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+.tile dd {
+  margin: 0;
+  font-size: 1.85rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.tile[data-size="lg"] dd {
+  font-size: clamp(1.45rem, 6.5vw, 2.1rem);
+}
+.tile small {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+}
+.tile[data-tone="danger"] dd {
+  color: var(--danger);
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+}
