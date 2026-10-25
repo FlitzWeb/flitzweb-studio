@@ -41,3 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 !.env.example
+
+# AI agent skills installed by tools (local only)
+.agents/
+.claude/
+skills-lock.json
