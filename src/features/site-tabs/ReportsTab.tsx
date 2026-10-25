@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { asc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { db, reports } from "@/db";
@@ -22,7 +23,8 @@ export async function ReportsTab({ site, searchParams }: TabProps) {
       <div className={styles.toolbar}>
         <PeriodPicker active={period.key} basePath={`/sites/${site.id}/rapporten`} filters={filters} />
         <Link href={`/sites/${site.id}/rapporten/nieuw`} className="btn btn-sm btn-primary">
-          + Rapport
+          <Plus aria-hidden="true" />
+          Rapport
         </Link>
       </div>
       <FilterBar filters={filters} />

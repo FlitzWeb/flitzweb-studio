@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -92,7 +93,8 @@ export function FilterBar({ filters }: { filters: Filter[] }) {
         </form>
       ) : (
         <button type="button" className={`btn btn-sm ${styles.addFilter}`} onClick={() => setOpen(true)}>
-          + Filter
+          <Plus aria-hidden="true" />
+          Filter
         </button>
       )}
     </div>

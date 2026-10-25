@@ -1,6 +1,6 @@
 "use client";
 
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatTime } from "@/lib/format";
 import styles from "./chart.module.css";
 
@@ -11,28 +11,34 @@ export function ResponseChart({ points }: { points: Point[] }) {
   return (
     <div className={styles.chart}>
       <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-          <CartesianGrid vertical={false} stroke="var(--line)" />
+        <AreaChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id="fill-ms-resp" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="var(--chart-1)" stopOpacity={0.2} />
+              <stop offset="1" stopColor="var(--chart-1)" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="4 4" />
           <XAxis
             dataKey="t"
             type="number"
             scale="time"
             domain={["dataMin", "dataMax"]}
             tickFormatter={(t) => formatTime(new Date(t))}
-            tick={{ fill: "var(--ink-faint)", fontSize: 12 }}
+            tick={{ fill: "var(--ink-3)", fontSize: 12 }}
             axisLine={false}
             tickLine={false}
             minTickGap={40}
           />
           <YAxis
-            tick={{ fill: "var(--ink-faint)", fontSize: 12 }}
+            tick={{ fill: "var(--ink-3)", fontSize: 12 }}
             axisLine={false}
             tickLine={false}
             width={64}
             tickFormatter={(v) => `${v} ms`}
           />
           <Tooltip
-            cursor={{ stroke: "var(--ink-faint)", strokeDasharray: "3 3" }}
+            cursor={{ stroke: "var(--ink-3)", strokeDasharray: "3 3" }}
             content={({ active, payload }) => {
               const p = payload?.[0]?.payload as Point | undefined;
               if (!active || !p) return null;
@@ -44,16 +50,17 @@ export function ResponseChart({ points }: { points: Point[] }) {
               );
             }}
           />
-          <Line
+          <Area
             type="monotone"
             dataKey="ms"
             stroke="var(--chart-line)"
+            fill="url(#fill-ms-resp)"
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 4, stroke: "var(--card)", strokeWidth: 2 }}
+            activeDot={{ r: 4, stroke: "var(--surface)", strokeWidth: 2 }}
             isAnimationActive={false}
           />
-        </LineChart>
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );

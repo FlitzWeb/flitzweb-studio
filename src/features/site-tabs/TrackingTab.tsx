@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import { lastEventAt } from "@/features/stats/queries";
 import {
@@ -55,7 +56,8 @@ export async function TrackingTab({ site }: TabProps) {
             <p className={styles.muted}>Eigen events voor deze site, zoals bestellingen of afspraken.</p>
           </div>
           <Link href={`/sites/${site.id}/trackers/nieuw`} className="btn btn-sm btn-primary">
-            + Tracker
+            <Plus aria-hidden="true" />
+            Tracker
           </Link>
         </div>
         {site.trackers.length === 0 ? (

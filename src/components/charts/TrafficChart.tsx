@@ -22,18 +22,18 @@ export function TrafficChart({ points, unit }: { points: Point[]; unit: Unit }) 
       </div>
       <ResponsiveContainer width="100%" height={240}>
         <ComposedChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} barCategoryGap="18%">
-          <CartesianGrid vertical={false} stroke="var(--line)" />
+          <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="4 4" />
           <XAxis
             dataKey="bucket"
             tickFormatter={label}
-            tick={{ fill: "var(--ink-faint)", fontSize: 12 }}
+            tick={{ fill: "var(--ink-3)", fontSize: 12 }}
             axisLine={false}
             tickLine={false}
             minTickGap={28}
           />
           <YAxis
             allowDecimals={false}
-            tick={{ fill: "var(--ink-faint)", fontSize: 12 }}
+            tick={{ fill: "var(--ink-3)", fontSize: 12 }}
             axisLine={false}
             tickLine={false}
             width={40}
@@ -52,14 +52,14 @@ export function TrafficChart({ points, unit }: { points: Point[]; unit: Unit }) 
               );
             }}
           />
-          <Bar dataKey="views" fill="var(--chart-bar)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+          <Bar dataKey="views" fill="var(--chart-bar)" radius={[5, 5, 0, 0]} isAnimationActive={false} />
           <Line
             type="linear"
             dataKey="visitors"
             stroke="var(--chart-line)"
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 4, stroke: "var(--card)", strokeWidth: 2 }}
+            activeDot={{ r: 4, stroke: "var(--surface)", strokeWidth: 2 }}
             isAnimationActive={false}
           />
         </ComposedChart>

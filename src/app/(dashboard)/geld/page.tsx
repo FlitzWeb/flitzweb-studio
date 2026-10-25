@@ -1,6 +1,7 @@
+import { AlertTriangle, CircleCheck, Clock, Plus, Repeat } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { StatTile, StatTiles } from "@/components/StatTile";
+import { KpiCard } from "@/components/KpiCard";
 import { MoneyList } from "@/features/money/MoneyList";
 import { getMoneySummary, getSubscriptions } from "@/features/money/queries";
 import { SubscriptionList } from "@/features/money/SubscriptionList";
@@ -19,33 +20,39 @@ export default async function MoneyPage() {
 
   return (
     <>
-      <section className={overview.head}>
+      <header className="page-head">
         <div>
-          <p className="eyebrow">Geld · {formatMonth(todayISO())}</p>
-          <h1 className={overview.title}>Geld</h1>
+          <h1 className="page-title">Geld</h1>
+          <p className="page-sub">{capitalize(formatMonth(todayISO()))} · facturen en abonnementen</p>
         </div>
-        <div className={overview.actions}>
+        <div className="page-actions">
           <Link href="/geld/abonnementen/nieuw" className="btn">
-            + Abonnement
+            <Repeat aria-hidden="true" />
+            Abonnement
           </Link>
           <Link href="/geld/facturen/nieuw" className="btn btn-primary">
-            + Factuur
+            <Plus aria-hidden="true" />
+            Nieuwe factuur
           </Link>
         </div>
-      </section>
+      </header>
 
-      <StatTiles>
-        <StatTile size="lg" label="Open" value={formatEuro(summary.awaitingCents)} />
-        <StatTile
-          size="lg"
+      <section className={overview.kpis} aria-label="Totalen">
+        <KpiCard icon={<Clock />} label="Open" value={formatEuro(summary.awaitingCents)} hint="Verstuurd, nog niet betaald" />
+        <KpiCard
+          icon={<AlertTriangle />}
           label="Te laat"
           value={formatEuro(summary.overdueCents)}
           tone={summary.overdueCents > 0 ? "danger" : undefined}
-          hint={summary.overdueCount > 0 ? `${summary.overdueCount} ${summary.overdueCount === 1 ? "post" : "posten"}` : undefined}
+          hint={
+            summary.overdueCount > 0
+              ? `${summary.overdueCount} ${summary.overdueCount === 1 ? "post" : "posten"} over de vervaldatum`
+              : "Niets te laat"
+          }
         />
-        <StatTile size="lg" label="MRR" value={formatEuro(summary.mrrCents)} hint="per maand, actieve abonnementen" />
-        <StatTile size="lg" label="Betaald deze maand" value={formatEuro(summary.paidThisMonthCents)} />
-      </StatTiles>
+        <KpiCard icon={<Repeat />} label="MRR" value={formatEuro(summary.mrrCents)} hint="Per maand, lopende abonnementen" />
+        <KpiCard icon={<CircleCheck />} label="Betaald deze maand" value={formatEuro(summary.paidThisMonthCents)} />
+      </section>
 
       <section className={styles.section}>
         <div className={styles.sectionHead}>
@@ -70,3 +77,5 @@ export default async function MoneyPage() {
     </>
   );
 }
+
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);

@@ -15,7 +15,7 @@ export default async function LoginPage({
   return (
     <main className={styles.wrap}>
       <div className={styles.card}>
-        <Logo className={styles.logo} />
+        <Logo className={styles.logo} studio />
         {sent ? (
           <>
             <h1 className={styles.title}>Check je mail.</h1>
@@ -29,7 +29,7 @@ export default async function LoginPage({
           </>
         ) : (
           <>
-            <h1 className={styles.title}>Studio</h1>
+            <h1 className={styles.title}>Inloggen bij Studio</h1>
             <p className={styles.lead}>
               Log in met je e-mailadres. Je krijgt een link, geen wachtwoord.
             </p>

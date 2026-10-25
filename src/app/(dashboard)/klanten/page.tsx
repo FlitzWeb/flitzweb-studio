@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContactActions } from "@/features/clients/ContactActions";
@@ -13,22 +14,28 @@ export default async function ClientsPage() {
 
   return (
     <>
-      <section className={styles.head}>
+      <header className="page-head">
         <div>
-          <p className="eyebrow">Klanten · {clients.length}</p>
-          <h1 className={styles.title}>Klanten</h1>
+          <h1 className="page-title">Klanten</h1>
+          <p className="page-sub">
+            {clients.length} {clients.length === 1 ? "klant" : "klanten"} · {clients.reduce((t, c) => t + c.sites.length, 0)} sites
+          </p>
         </div>
         <Link href="/klanten/nieuw" className="btn btn-primary">
-          + Nieuwe klant
+          <Plus aria-hidden="true" />
+          Nieuwe klant
         </Link>
-      </section>
+      </header>
 
       {clients.length === 0 ? (
-        <p className={styles.muted}>Nog geen klanten.</p>
+        <p className={styles.muted}>Nog geen klanten. Voeg je eerste klant toe om sites en facturen te koppelen.</p>
       ) : (
         <ul className={styles.list}>
           {clients.map((client) => (
             <li key={client.id} className={styles.row}>
+              <span className={styles.avatar} aria-hidden="true">
+                {client.name.charAt(0)}
+              </span>
               <Link href={`/klanten/${client.id}`} className={styles.rowMain}>
                 <h2>{client.name}</h2>
                 <div className={styles.rowMeta}>
@@ -46,7 +53,7 @@ export default async function ClientsPage() {
                     {client.sites.length} {client.sites.length === 1 ? "site" : "sites"}
                   </span>
                   {client.billingType === "no_billing" && (
-                    <span className={styles.badge}>{billingLabels.no_billing}</span>
+                    <span className="badge" data-tone="plain">{billingLabels.no_billing}</span>
                   )}
                 </div>
               </Link>

@@ -13,9 +13,9 @@ export function BucketBarChart({ points, unit, unitLabel }: { points: Point[]; u
     <div className={styles.chart}>
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} barCategoryGap="18%">
-          <CartesianGrid vertical={false} stroke="var(--line)" />
-          <XAxis dataKey="bucket" tickFormatter={label} tick={{ fill: "var(--ink-faint)", fontSize: 12 }} axisLine={false} tickLine={false} minTickGap={28} />
-          <YAxis allowDecimals={false} tick={{ fill: "var(--ink-faint)", fontSize: 12 }} axisLine={false} tickLine={false} width={36} />
+          <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="4 4" />
+          <XAxis dataKey="bucket" tickFormatter={label} tick={{ fill: "var(--ink-3)", fontSize: 12 }} axisLine={false} tickLine={false} minTickGap={28} />
+          <YAxis allowDecimals={false} tick={{ fill: "var(--ink-3)", fontSize: 12 }} axisLine={false} tickLine={false} width={36} />
           <Tooltip
             cursor={{ fill: "color-mix(in srgb, var(--ink) 6%, transparent)" }}
             content={({ active, payload }) => {
@@ -31,7 +31,7 @@ export function BucketBarChart({ points, unit, unitLabel }: { points: Point[]; u
               );
             }}
           />
-          <Bar dataKey="count" fill="var(--chart-line)" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+          <Bar dataKey="count" fill="var(--chart-line)" radius={[5, 5, 0, 0]} isAnimationActive={false} />
         </BarChart>
       </ResponsiveContainer>
     </div>

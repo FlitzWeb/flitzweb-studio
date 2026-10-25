@@ -3,7 +3,7 @@ import { daysUntil, displayHost, formatDuration, formatPct, formatRelative } fro
 import type { SiteOverview } from "@/lib/uptime/queries";
 import { siteStatusLabels } from "@/features/sites/schema";
 import { SSL_WARN_DAYS } from "@/lib/uptime/run";
-import { StatusDot, statusLabel, statusOf } from "./StatusDot";
+import { statusLabel, statusOf } from "./StatusDot";
 import styles from "./uptime.module.css";
 
 export function SiteCard({ site }: { site: SiteOverview }) {
@@ -14,22 +14,22 @@ export function SiteCard({ site }: { site: SiteOverview }) {
   return (
     <Link href={`/sites/${site.id}`} className={styles.card} data-status={status}>
       <div className={styles.cardTop}>
+        <span className={styles.favicon} aria-hidden="true">
+          {site.name.charAt(0)}
+        </span>
         <div className={styles.cardTitle}>
           <h2>{site.name}</h2>
           <span className={styles.host}>{displayHost(site.url)}</span>
         </div>
-        <StatusDot status={status} size={18} />
+        <span className="badge" data-tone={status === "up" ? "ok" : status === "down" ? "danger" : undefined}>
+          {status === "off" ? siteStatusLabels[site.status] : statusLabel(status)}
+        </span>
       </div>
 
-      {status === "down" ? (
+      {status === "down" && (
         <p className={styles.downNote}>
-          Offline
-          {site.downForMs != null && <> · al {formatDuration(site.downForMs)}</>}
-          {check?.error && <span>{check.error}</span>}
-        </p>
-      ) : (
-        <p className={styles.statusLine}>
-          {status === "off" ? siteStatusLabels[site.status] : statusLabel(status)}
+          {site.downForMs != null ? <>Al {formatDuration(site.downForMs)} offline</> : "Offline"}
+          {check?.error && <> · {check.error}</>}
         </p>
       )}
 

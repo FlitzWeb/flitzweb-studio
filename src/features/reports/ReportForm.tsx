@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import type { Report } from "@/db";
@@ -122,7 +123,8 @@ export function ReportForm({
           </ol>
           {steps.length < 8 && (
             <button type="button" className="btn btn-sm" onClick={() => setSteps([...steps, { type: "path", value: "" }])}>
-              + Stap
+              <Plus aria-hidden="true" />
+              Stap
             </button>
           )}
           <div className="field">

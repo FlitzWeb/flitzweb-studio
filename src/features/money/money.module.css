@@ -1,6 +1,6 @@
 .muted {
   margin: 0;
-  color: var(--ink-soft);
+  color: var(--ink-2);
   font-size: 0.9rem;
 }
 
@@ -18,9 +18,8 @@
 }
 .sectionHead h2 {
   margin: 0;
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 1.5rem;
+  font-weight: 600;
+  font-size: 1rem;
 }
 .sectionHead > div {
   display: flex;
@@ -33,10 +32,10 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  background: var(--card);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-xs);
   overflow: hidden;
 }
 
@@ -51,11 +50,11 @@
   border-top: 1px solid var(--line);
 }
 .item[data-status="overdue"] {
-  background: var(--danger-soft);
+  background: color-mix(in srgb, var(--danger-soft) 45%, transparent);
 }
 .item[data-status="paid"],
 .item[data-status="stopped"] {
-  color: var(--ink-soft);
+  color: var(--ink-2);
 }
 .item > :last-child:not(.amount) {
   grid-column: 1 / -1;
@@ -80,10 +79,10 @@
   text-decoration: none;
 }
 .itemTitle:hover {
-  color: var(--brand-deep);
+  color: var(--brand-ink);
 }
 .itemTitle strong {
-  font-weight: 700;
+  font-weight: 650;
 }
 
 .itemMeta {
@@ -93,18 +92,19 @@
   gap: var(--space-2);
   margin-top: 2px;
   font-size: 0.85rem;
-  color: var(--ink-faint);
+  color: var(--ink-3);
 }
 
 .amount {
-  font-size: 1.35rem;
+  font-size: 1rem;
+  font-weight: 650;
   white-space: nowrap;
   text-align: right;
 }
 .amount small {
   font-family: var(--font-ui);
   font-size: 0.75rem;
-  color: var(--ink-faint);
+  color: var(--ink-3);
 }
 .item[data-status="overdue"] .amount {
   color: var(--danger);
@@ -112,16 +112,16 @@
 
 .pill {
   display: inline-block;
-  padding: 1px 8px;
-  border-radius: 999px;
+  padding: 1px 7px;
+  border-radius: var(--radius-xs);
   font-size: 0.72rem;
-  font-weight: 700;
-  background: var(--paper-2);
-  color: var(--ink-soft);
+  font-weight: 650;
+  background: var(--surface-3);
+  color: var(--ink-2);
 }
 .pill[data-status="overdue"] {
-  background: var(--danger);
-  color: #fff;
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 .pill[data-status="paid"] {
   background: var(--ok-soft);

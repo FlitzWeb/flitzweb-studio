@@ -24,7 +24,7 @@ export default async function VerifyPage({
   return (
     <main className={styles.wrap}>
       <div className={styles.card}>
-        <Logo className={styles.logo} />
+        <Logo className={styles.logo} studio />
         <h1 className={styles.title}>Welkom terug.</h1>
         <p className={styles.lead}>Tik op de knop om in te loggen.</p>
         <form action={confirm} className={styles.form}>

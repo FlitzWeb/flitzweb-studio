@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ContactCard } from "@/features/clients/ContactCard";
@@ -33,33 +34,37 @@ export default async function ClientPage({ params }: Props) {
       <Link href="/klanten" className="back-link">
         ← Klanten
       </Link>
-      <section className={styles.head}>
+      <header className="page-head">
         <div>
-          <h1 className={styles.title}>{client.name}</h1>
+          <h1 className="page-title">{client.name}</h1>
           <p className={styles.sub}>
             {client.businessName && client.businessName !== client.name && (
               <span>{client.businessName}</span>
             )}
-            <span className={styles.badge}>{billingLabels[client.billingType]}</span>
+            <span className="badge" data-tone={client.billingType === "paying" ? "plain" : undefined}>
+              {billingLabels[client.billingType]}
+            </span>
           </p>
         </div>
-        <Link href={`/klanten/${client.id}/bewerken`} className="btn btn-sm">
+        <Link href={`/klanten/${client.id}/bewerken`} className="btn">
+          <Pencil aria-hidden="true" />
           Bewerken
         </Link>
-      </section>
+      </header>
 
       <ContactCard client={client} />
 
       <div className={styles.sectionHead}>
         <h2>Sites</h2>
         <Link href={`/sites/nieuw?klant=${client.id}`} className="btn btn-sm">
-          + Site toevoegen
+          <Plus aria-hidden="true" />
+          Site toevoegen
         </Link>
       </div>
       {sites.length === 0 ? (
         <p className={styles.muted}>Nog geen sites voor deze klant.</p>
       ) : (
-        <div className={overview.grid}>
+        <div className={overview.siteGrid}>
           {sites.map((site) => (
             <SiteCard key={site.id} site={site} />
           ))}

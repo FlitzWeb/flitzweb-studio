@@ -5,44 +5,58 @@
   margin: 0;
 }
 
+/* Inside a panel: a quiet inset box. */
 .tile {
-  padding: var(--space-3) clamp(var(--space-2), 2.5vw, var(--space-4));
-  background: var(--paper);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
   min-width: 0;
 }
+/* On the page itself: a full card. */
 .tile[data-size="lg"] {
-  padding: var(--space-4);
-  background: var(--card);
-  border: 1px solid var(--line);
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-xs);
 }
 
 .tile dt {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--ink-faint);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+.tile[data-size="lg"] dt {
+  font-size: 0.875rem;
+  font-weight: 550;
+  color: var(--ink-2);
 }
 .tile dd {
-  margin: 0;
-  font-size: 1.85rem;
+  margin: 4px 0 0;
+  font-size: 1.375rem;
+  font-weight: 650;
   line-height: 1.2;
+  letter-spacing: -0.025em;
   white-space: nowrap;
 }
 .tile[data-size="lg"] dd {
-  font-size: clamp(1.45rem, 6.5vw, 2.1rem);
+  margin-top: var(--space-2);
+  font-size: 1.75rem;
+  letter-spacing: -0.03em;
 }
 .tile small {
-  font-family: var(--font-ui);
-  font-size: 0.75rem;
-  color: var(--ink-faint);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--ink-3);
 }
 .tile[data-tone="danger"] dd {
   color: var(--danger);
 }
 
 .hint {
+  display: block;
+  margin-top: 2px;
   font-size: 0.75rem;
-  color: var(--ink-faint);
+  color: var(--ink-3);
 }

@@ -1,9 +1,11 @@
+import { ExternalLink, Pencil } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { tabsFor } from "@/features/site-tabs/registry";
-import { StatusDot, statusOf } from "@/features/uptime/StatusDot";
+import { siteStatusLabels } from "@/features/sites/schema";
+import { statusLabel, statusOf } from "@/features/uptime/StatusDot";
 import { displayHost } from "@/lib/format";
 import { getSite } from "@/lib/sites";
 import styles from "./site.module.css";
@@ -40,19 +42,31 @@ export default async function SitePage({ params, searchParams }: Props) {
         ← Overzicht
       </Link>
       <header className={styles.head}>
-        <StatusDot status={status} size={20} />
+        <span className={styles.favicon} data-status={status} aria-hidden="true">
+          {site.name.charAt(0)}
+        </span>
         <div className={styles.headText}>
-          <h1 className={styles.title}>{site.name}</h1>
+          <div className={styles.titleRow}>
+            <h1 className="page-title">{site.name}</h1>
+            <span className="badge" data-tone={status === "up" ? "ok" : status === "down" ? "danger" : undefined}>
+              {status === "off" ? siteStatusLabels[site.status] : statusLabel(status)}
+            </span>
+          </div>
           <p className={styles.meta}>
             <a href={site.url} target="_blank" rel="noreferrer">
-              {displayHost(site.url)} ↗
+              {displayHost(site.url)}
+              <ExternalLink aria-hidden="true" />
             </a>
+            <span aria-hidden="true">·</span>
             <Link href={`/klanten/${site.client.id}`}>{site.client.name}</Link>
           </p>
         </div>
-        <Link href={`/sites/${site.id}/bewerken`} className="btn btn-sm">
-          Bewerken
-        </Link>
+        <div className="page-actions">
+          <Link href={`/sites/${site.id}/bewerken`} className="btn">
+            <Pencil aria-hidden="true" />
+            Bewerken
+          </Link>
+        </div>
       </header>
 
       <nav className={styles.tabs} aria-label="Onderdelen">

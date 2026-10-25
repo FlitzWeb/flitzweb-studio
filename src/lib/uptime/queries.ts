@@ -93,3 +93,22 @@ export async function getIncidents(siteId: number, days = 30) {
   }
   return incidents.reverse();
 }
+
+/** Average response time (successful checks, live sites) over the last 24h and the 24h before. */
+export async function responseAverages() {
+  const [row] = await db
+    .select({
+      current: sql<number | null>`avg(${checks.responseMs}) filter (where ${checks.checkedAt} >= now() - interval '24 hours')`.mapWith((v) => (v == null ? null : Math.round(Number(v)))),
+      previous: sql<number | null>`avg(${checks.responseMs}) filter (where ${checks.checkedAt} < now() - interval '24 hours')`.mapWith((v) => (v == null ? null : Math.round(Number(v)))),
+    })
+    .from(checks)
+    .innerJoin(sites, eq(sites.id, checks.siteId))
+    .where(
+      and(
+        eq(checks.isUp, true),
+        eq(sites.status, "live"),
+        gte(checks.checkedAt, new Date(Date.now() - 2 * DAY)),
+      ),
+    );
+  return row ?? { current: null, previous: null };
+}

@@ -2,35 +2,63 @@
   width: 100%;
   font-family: var(--font-ui);
 }
+.chart :global(.recharts-surface) {
+  overflow: visible;
+}
 
 .tooltip {
   display: grid;
-  gap: 2px;
-  padding: var(--space-2) var(--space-3);
-  background: var(--card);
+  gap: 4px;
+  min-width: 150px;
+  padding: 10px 12px;
+  background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
-  font-size: 0.8rem;
-  color: var(--ink-soft);
+  font-size: 0.8125rem;
+  color: var(--ink-3);
 }
 .tooltip strong {
   color: var(--ink);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+.tooltipRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-2);
+}
+.tooltipRow i {
+  width: 10px;
+  height: 3px;
+  border-radius: 2px;
+}
+.tooltipRow strong {
+  margin-left: auto;
+  padding-left: 12px;
 }
 
 .legend {
   display: flex;
-  gap: var(--space-4);
-  margin-bottom: var(--space-2);
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--ink-soft);
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  color: var(--ink-2);
 }
-.legend span {
+.legend li,
+.legend > span {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
+}
+.legend small {
+  color: var(--ink-3);
+  font-weight: 500;
 }
 .swatchBar {
   width: 10px;
@@ -40,7 +68,7 @@
 }
 .swatchLine {
   width: 14px;
-  height: 2px;
-  border-radius: 1px;
+  height: 3px;
+  border-radius: 2px;
   background: var(--chart-line);
 }

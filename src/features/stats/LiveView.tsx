@@ -52,9 +52,9 @@ export function LiveView({ siteId, initial }: { siteId: number; initial: Realtim
         <div className={chartStyles.chart}>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={data.minutes} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} barCategoryGap="20%">
-              <CartesianGrid vertical={false} stroke="var(--line)" />
-              <XAxis dataKey="minute" tick={{ fill: "var(--ink-faint)", fontSize: 12 }} axisLine={false} tickLine={false} minTickGap={32} />
-              <YAxis allowDecimals={false} tick={{ fill: "var(--ink-faint)", fontSize: 12 }} axisLine={false} tickLine={false} width={32} />
+              <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="4 4" />
+              <XAxis dataKey="minute" tick={{ fill: "var(--ink-3)", fontSize: 12 }} axisLine={false} tickLine={false} minTickGap={32} />
+              <YAxis allowDecimals={false} tick={{ fill: "var(--ink-3)", fontSize: 12 }} axisLine={false} tickLine={false} width={32} />
               <Tooltip
                 cursor={{ fill: "color-mix(in srgb, var(--ink) 6%, transparent)" }}
                 content={({ active, payload }) => {

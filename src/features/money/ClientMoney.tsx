@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import { StatTile, StatTiles } from "@/components/StatTile";
 import type { Client } from "@/db";
@@ -34,10 +35,12 @@ export async function ClientMoney({ client, returnTo }: { client: Client; return
         <h2>Geld</h2>
         <div>
           <Link href={`/geld/abonnementen/nieuw?${q}`} className="btn btn-sm">
-            + Abonnement
+            <Plus aria-hidden="true" />
+            Abonnement
           </Link>
           <Link href={`/geld/facturen/nieuw?${q}`} className="btn btn-sm">
-            + Factuur
+            <Plus aria-hidden="true" />
+            Factuur
           </Link>
         </div>
       </div>

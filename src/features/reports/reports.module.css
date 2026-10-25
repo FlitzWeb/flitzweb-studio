@@ -2,11 +2,11 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
-  background: var(--card);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  padding: var(--space-5);
+  box-shadow: var(--shadow-xs);
+  padding: var(--space-4) var(--space-5) var(--space-5);
 }
 
 .head {
@@ -17,29 +17,30 @@
 }
 
 .kind {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: var(--radius-xs);
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .h2 {
   margin: 0;
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 1.35rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
 }
 
 .muted {
   margin: 0;
-  color: var(--ink-soft);
+  color: var(--ink-2);
   font-size: 0.9rem;
 }
 
 .summary {
   margin: 0;
-  color: var(--ink-soft);
+  color: var(--ink-2);
 }
 .summary strong {
   font-size: 1.6rem;
@@ -54,7 +55,7 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--paper-2);
+  background: var(--surface-3);
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -89,7 +90,7 @@
 .funnelBar {
   height: 28px;
   border-radius: var(--radius-sm);
-  background: var(--paper-2);
+  background: var(--surface-3);
   overflow: hidden;
 }
 .funnelBar span {
@@ -103,7 +104,7 @@
   align-items: baseline;
   gap: var(--space-2);
   font-size: 0.85rem;
-  color: var(--ink-soft);
+  color: var(--ink-2);
   white-space: nowrap;
 }
 .funnelNums strong {
@@ -148,7 +149,7 @@
 .pathStep {
   padding: 2px 8px;
   border-radius: 6px;
-  background: var(--paper-2);
+  background: var(--surface-3);
   font-size: 0.85rem;
   overflow-wrap: anywhere;
 }
@@ -158,7 +159,7 @@
   font-weight: 600;
 }
 .arrow {
-  color: var(--ink-faint);
+  color: var(--ink-3);
   font-size: 0.85rem;
 }
 .journeyCount {
@@ -168,7 +169,7 @@
   white-space: nowrap;
 }
 .journeyCount small {
-  color: var(--ink-faint);
+  color: var(--ink-3);
 }
 
 /* ---------- Retention ---------- */
@@ -183,7 +184,7 @@
 }
 .retention th {
   font-weight: 600;
-  color: var(--ink-faint);
+  color: var(--ink-3);
   text-align: left;
   white-space: nowrap;
   padding: 4px 8px;
@@ -205,13 +206,13 @@
 .goalBar {
   height: 10px;
   border-radius: 999px;
-  background: var(--paper-2);
+  background: var(--surface-3);
   overflow: hidden;
 }
 .goalBar span {
   display: block;
   height: 100%;
-  background: var(--grad);
+  background: var(--brand);
 }
 
 /* ---------- Form ---------- */
@@ -227,7 +228,7 @@
   padding: var(--space-3);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  background: var(--paper);
+  background: var(--surface-2);
   text-align: left;
   color: var(--ink);
   font: inherit;
@@ -235,7 +236,7 @@
 }
 .typeOption span {
   font-size: 0.8rem;
-  color: var(--ink-soft);
+  color: var(--ink-2);
 }
 .typeOption[aria-checked="true"] {
   border-color: var(--brand);
