@@ -128,27 +128,6 @@
   color: #fff;
 }
 
-.siteDot {
-  width: 8px;
-  height: 8px;
-  margin: 0 4px 0 5px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--muted-dot);
-}
-.siteDot[data-status="up"] {
-  background: var(--ok);
-  box-shadow: 0 0 0 3px var(--ok-soft);
-}
-.siteDot[data-status="down"] {
-  background: var(--danger);
-  box-shadow: 0 0 0 3px var(--danger-soft);
-}
-.siteDot[data-status="unknown"] {
-  background: transparent;
-  border: 1.5px dashed var(--ink-3);
-}
-
 .account {
   display: flex;
   align-items: center;

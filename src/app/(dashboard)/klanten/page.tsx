@@ -6,6 +6,7 @@ import { getClients } from "@/features/clients/queries";
 import { billingLabels } from "@/features/clients/schema";
 import { StatusDot, statusOf } from "@/features/uptime/StatusDot";
 import styles from "@/features/clients/clients.module.css";
+import { SiteLogo } from "@/components/SiteLogo";
 
 export const metadata: Metadata = { title: "Klanten" };
 
@@ -33,9 +34,12 @@ export default async function ClientsPage() {
         <ul className={styles.list}>
           {clients.map((client) => (
             <li key={client.id} className={styles.row}>
-              <span className={styles.avatar} aria-hidden="true">
-                {client.name.charAt(0)}
-              </span>
+              {/* The client's logo is their (live) site's logo. */}
+              <SiteLogo
+                siteId={(client.sites.find((s) => s.status === "live") ?? client.sites[0])?.id}
+                name={client.name}
+                size={36}
+              />
               <Link href={`/klanten/${client.id}`} className={styles.rowMain}>
                 <h2>{client.name}</h2>
                 <div className={styles.rowMeta}>

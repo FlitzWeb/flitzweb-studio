@@ -9,6 +9,7 @@ import { statusLabel, statusOf } from "@/features/uptime/StatusDot";
 import { displayHost } from "@/lib/format";
 import { getSite } from "@/lib/sites";
 import styles from "./site.module.css";
+import { SiteLogo } from "@/components/SiteLogo";
 
 type Props = {
   params: Promise<{ id: string; tab?: string[] }>;
@@ -42,9 +43,7 @@ export default async function SitePage({ params, searchParams }: Props) {
         ← Overzicht
       </Link>
       <header className={styles.head}>
-        <span className={styles.favicon} data-status={status} aria-hidden="true">
-          {site.name.charAt(0)}
-        </span>
+        <SiteLogo siteId={site.id} name={site.name} size={52} className={styles.logo} />
         <div className={styles.headText}>
           <div className={styles.titleRow}>
             <h1 className="page-title">{site.name}</h1>

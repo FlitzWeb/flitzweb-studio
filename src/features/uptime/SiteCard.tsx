@@ -5,6 +5,7 @@ import { siteStatusLabels } from "@/features/sites/schema";
 import { SSL_WARN_DAYS } from "@/lib/uptime/run";
 import { statusLabel, statusOf } from "./StatusDot";
 import styles from "./uptime.module.css";
+import { SiteLogo } from "@/components/SiteLogo";
 
 export function SiteCard({ site }: { site: SiteOverview }) {
   const status = statusOf(site);
@@ -14,9 +15,7 @@ export function SiteCard({ site }: { site: SiteOverview }) {
   return (
     <Link href={`/sites/${site.id}`} className={styles.card} data-status={status}>
       <div className={styles.cardTop}>
-        <span className={styles.favicon} aria-hidden="true">
-          {site.name.charAt(0)}
-        </span>
+        <SiteLogo siteId={site.id} name={site.name} size={40} />
         <div className={styles.cardTitle}>
           <h2>{site.name}</h2>
           <span className={styles.host}>{displayHost(site.url)}</span>

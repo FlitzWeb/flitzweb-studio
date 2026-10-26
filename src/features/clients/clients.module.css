@@ -58,18 +58,6 @@
   background: var(--surface-2);
 }
 
-.avatar {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-sm);
-  background: var(--brand-soft);
-  color: var(--brand-ink);
-  font-weight: 650;
-}
-
 .rowMain {
   flex: 1;
   min-width: 0;

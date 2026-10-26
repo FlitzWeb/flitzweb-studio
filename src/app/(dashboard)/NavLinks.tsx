@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { openCommandPalette } from "./CommandPalette";
 import { isActive, navItems } from "./nav";
 import styles from "./shell.module.css";
+import { SiteLogo } from "@/components/SiteLogo";
 
 export type NavSite = { id: number; name: string; status: "up" | "down" | "unknown" | "off" };
 
@@ -41,7 +42,7 @@ export function SidebarNav({ sites }: { sites: NavSite[] }) {
             const active = pathname === href || pathname.startsWith(`${href}/`);
             return (
               <Link key={s.id} href={href} className={styles.navLink} aria-current={active ? "page" : undefined}>
-                <span className={styles.siteDot} data-status={s.status} aria-hidden="true" />
+                <SiteLogo siteId={s.id} name={s.name} size={22} status={s.status} />
                 <span className={styles.navText}>{s.name}</span>
                 {s.status === "down" && <span className="sr-only">(offline)</span>}
               </Link>

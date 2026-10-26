@@ -198,26 +198,6 @@
   border-radius: var(--radius-sm);
 }
 
-.favicon {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--ink-2);
-  font-weight: 650;
-  font-size: 0.875rem;
-}
-.table tr[data-status="up"] .favicon,
-.card[data-status="up"] .favicon {
-  background: var(--brand-soft);
-  border-color: transparent;
-  color: var(--brand-ink);
-}
-
 .siteName {
   display: grid;
   min-width: 0;

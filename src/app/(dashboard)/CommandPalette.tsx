@@ -1,16 +1,17 @@
 "use client";
 
-import { CornerDownLeft, Globe, LayoutGrid, Plus, Search, User, Users, Wallet } from "lucide-react";
+import { CornerDownLeft, LayoutGrid, Plus, Search, User, Users, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./shell.module.css";
+import { SiteLogo } from "@/components/SiteLogo";
 
 const OPEN_EVENT = "fw:command-palette";
 
 /** Opens the palette from anywhere (search field, tab bar). */
 export const openCommandPalette = () => window.dispatchEvent(new Event(OPEN_EVENT));
 
-type Item = { id: string; label: string; hint?: string; href: string; group: string; icon: React.ReactNode };
+type Item = { id: string; label: string; hint?: string; href: string; group: string; icon: React.ReactNode; bare?: boolean };
 
 /** ⌘K quick-jump to any page, site or client. */
 export function CommandPalette({
@@ -31,7 +32,15 @@ export function CommandPalette({
       { id: "p-home", label: "Overzicht", href: "/", group: "Pagina's", icon: <LayoutGrid /> },
       { id: "p-clients", label: "Klanten", href: "/klanten", group: "Pagina's", icon: <Users /> },
       { id: "p-money", label: "Geld", href: "/geld", group: "Pagina's", icon: <Wallet /> },
-      ...sites.map((s) => ({ id: `s-${s.id}`, label: s.name, hint: s.host, href: `/sites/${s.id}`, group: "Sites", icon: <Globe /> })),
+      ...sites.map((s) => ({
+        id: `s-${s.id}`,
+        label: s.name,
+        hint: s.host,
+        href: `/sites/${s.id}`,
+        group: "Sites",
+        icon: <SiteLogo siteId={s.id} name={s.name} size={26} />,
+        bare: true,
+      })),
       ...clients.map((c) => ({ id: `c-${c.id}`, label: c.name, href: `/klanten/${c.id}`, group: "Klanten", icon: <User /> })),
       { id: "n-site", label: "Nieuwe site", href: "/sites/nieuw", group: "Maken", icon: <Plus /> },
       { id: "n-client", label: "Nieuwe klant", href: "/klanten/nieuw", group: "Maken", icon: <Plus /> },
@@ -130,9 +139,13 @@ export function CommandPalette({
                 onMouseMove={() => setCursor(i)}
                 onClick={() => go(item)}
               >
-                <span className={styles.paletteIcon} aria-hidden="true">
-                  {item.icon}
-                </span>
+                {item.bare ? (
+                  item.icon
+                ) : (
+                  <span className={styles.paletteIcon} aria-hidden="true">
+                    {item.icon}
+                  </span>
+                )}
                 <span className={styles.navText}>{item.label}</span>
                 {item.hint && <small>{item.hint}</small>}
                 {i === cursor && <CornerDownLeft className={styles.paletteEnter} aria-hidden="true" />}

@@ -5,6 +5,7 @@ import type { SiteOverview } from "@/lib/uptime/queries";
 import { SSL_WARN_DAYS } from "@/lib/uptime/run";
 import { statusLabel, statusOf } from "./StatusDot";
 import styles from "./uptime.module.css";
+import { SiteLogo } from "@/components/SiteLogo";
 
 const tone = { up: "ok", down: "danger", unknown: undefined, off: undefined } as const;
 
@@ -41,9 +42,7 @@ export function SiteTable({ sites }: { sites: SiteOverview[] }) {
               <tr key={site.id} data-status={status}>
                 <td>
                   <Link href={`/sites/${site.id}`} className={styles.siteCell}>
-                    <span className={styles.favicon} aria-hidden="true">
-                      {site.name.charAt(0)}
-                    </span>
+                    <SiteLogo siteId={site.id} name={site.name} size={36} />
                     <span className={styles.siteName}>
                       <strong>{site.name}</strong>
                       <small>{displayHost(site.url)}</small>
