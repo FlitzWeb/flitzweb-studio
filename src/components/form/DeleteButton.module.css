@@ -1,0 +1,28 @@
+.confirm {
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  border-radius: var(--radius-lg);
+  background: var(--danger-soft);
+}
+.confirm p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.confirm > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.confirm .yes {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--surface);
+}
+.confirm .yes:hover {
+  background: color-mix(in srgb, var(--danger) 88%, #000);
+}
