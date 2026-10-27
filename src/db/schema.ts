@@ -293,6 +293,37 @@ export const subscriptionCharges = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// Costs: what FlitzWeb itself pays for (Claude, domains, software, ...).
+// Amounts are integer cents. Payment dates are derived from startDate +
+// interval, never stored; see features/costs/schedule.ts.
+// ---------------------------------------------------------------------------
+
+export const costCategory = pgEnum("cost_category", [
+  "software",
+  "ai",
+  "domain",
+  "hosting",
+  "hardware",
+  "other",
+]);
+export const costInterval = pgEnum("cost_interval", ["monthly", "yearly", "once"]);
+
+export const costs = pgTable("costs", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  name: text().notNull(),
+  category: costCategory().notNull().default("software"),
+  amountCents: integer("amount_cents").notNull(),
+  interval: costInterval().notNull().default("monthly"),
+  // First payment (or the purchase date for one-off costs).
+  startDate: date("start_date").notNull(),
+  // Cancelled: no payments after this date.
+  endDate: date("end_date"),
+  url: text(), // billing/account page
+  notes: text(),
+  createdAt: createdAt(),
+});
+
+// ---------------------------------------------------------------------------
 // Auth: one-time magic-link tokens (only the SHA-256 hash is stored)
 // ---------------------------------------------------------------------------
 
@@ -366,3 +397,4 @@ export type Report = typeof reports.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type SubscriptionCharge = typeof subscriptionCharges.$inferSelect;
+export type Cost = typeof costs.$inferSelect;

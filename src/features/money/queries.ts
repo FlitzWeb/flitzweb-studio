@@ -122,17 +122,23 @@ const isRunningNow = (s: { active: boolean; startDate: string; endDate: string |
   return s.active && s.startDate <= today && (!s.endDate || s.endDate >= today);
 };
 
+/** Monthly recurring revenue: running subscriptions of paying clients. */
+export async function getMrrCents() {
+  const [mrr] = await db
+    .select({ cents: sql<number>`coalesce(sum(${subscriptions.amountCents}), 0)`.mapWith(Number) })
+    .from(subscriptions)
+    .innerJoin(clients, eq(clients.id, subscriptions.clientId))
+    .where(and(paying, isRunning()));
+  return mrr.cents;
+}
+
 /** Totals for the Geld page. */
 export async function getMoneySummary() {
   const today = todayISO();
-  const [outstanding, paidThisMonth, [mrr], recentPaid] = await Promise.all([
+  const [outstanding, paidThisMonth, mrrCents, recentPaid] = await Promise.all([
     getMoneyItems({ unpaid: true }),
     getMoneyItems({ paidFrom: monthStart(today) }),
-    db
-      .select({ cents: sql<number>`coalesce(sum(${subscriptions.amountCents}), 0)`.mapWith(Number) })
-      .from(subscriptions)
-      .innerJoin(clients, eq(clients.id, subscriptions.clientId))
-      .where(and(paying, isRunning())),
+    getMrrCents(),
     getMoneyItems({ paidFrom: addDays(today, -90) }),
   ]);
 
@@ -142,7 +148,7 @@ export async function getMoneySummary() {
     awaitingCents: sum(outstanding.filter((i) => i.status === "awaiting")),
     overdueCents: sum(outstanding.filter((i) => i.status === "overdue")),
     overdueCount: outstanding.filter((i) => i.status === "overdue").length,
-    mrrCents: mrr.cents,
+    mrrCents,
     paidThisMonthCents: sum(paidThisMonth),
     recentPaid: recentPaid
       .filter((i) => i.paidDate)

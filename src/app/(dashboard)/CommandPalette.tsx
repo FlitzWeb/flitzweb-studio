@@ -1,6 +1,6 @@
 "use client";
 
-import { CornerDownLeft, LayoutGrid, Plus, Search, User, Users, Wallet } from "lucide-react";
+import { CornerDownLeft, LayoutGrid, Plus, Receipt, Search, User, Users, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./shell.module.css";
@@ -32,6 +32,7 @@ export function CommandPalette({
       { id: "p-home", label: "Overzicht", href: "/", group: "Pagina's", icon: <LayoutGrid /> },
       { id: "p-clients", label: "Klanten", href: "/klanten", group: "Pagina's", icon: <Users /> },
       { id: "p-money", label: "Geld", href: "/geld", group: "Pagina's", icon: <Wallet /> },
+      { id: "p-costs", label: "Kosten", href: "/kosten", group: "Pagina's", icon: <Receipt /> },
       ...sites.map((s) => ({
         id: `s-${s.id}`,
         label: s.name,
@@ -45,6 +46,7 @@ export function CommandPalette({
       { id: "n-site", label: "Nieuwe site", href: "/sites/nieuw", group: "Maken", icon: <Plus /> },
       { id: "n-client", label: "Nieuwe klant", href: "/klanten/nieuw", group: "Maken", icon: <Plus /> },
       { id: "n-invoice", label: "Nieuwe factuur", href: "/geld/facturen/nieuw", group: "Maken", icon: <Plus /> },
+      { id: "n-cost", label: "Nieuwe kosten", href: "/kosten/nieuw", group: "Maken", icon: <Plus /> },
     ],
     [sites, clients],
   );
