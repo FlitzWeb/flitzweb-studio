@@ -5,12 +5,18 @@ export const siteSchema = z.object({
   clientId: z.coerce.number({ message: "Kies een klant" }).int().positive("Kies een klant"),
   name: requiredText("Geef de site een naam"),
   url: optionalUrl.refine((v) => v !== null, "Vul de URL in"),
-  hosting: z.enum(["vercel", "other"]),
+  hosting: z.enum(["vercel", "cloudflare", "other"]),
   hostingDashboardUrl: optionalUrl,
   registrar: optionalText,
   goLiveDate: optionalDate,
   status: z.enum(["live", "in_progress", "paused"]),
 });
+
+export const hostingLabels = {
+  vercel: "Vercel",
+  cloudflare: "Cloudflare",
+  other: "Anders",
+} as const;
 
 export const siteStatusLabels = {
   live: "Live",

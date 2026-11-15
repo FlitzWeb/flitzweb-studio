@@ -55,7 +55,7 @@ export const siteStatus = pgEnum("site_status", [
   "in_progress",
   "paused",
 ]);
-export const hostingProvider = pgEnum("hosting_provider", ["vercel", "other"]);
+export const hostingProvider = pgEnum("hosting_provider", ["vercel", "cloudflare", "other"]);
 
 export const sites = pgTable(
   "sites",

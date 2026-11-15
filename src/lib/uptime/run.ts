@@ -87,7 +87,7 @@ async function applyStateChange(site: Site, result: ProbeResult) {
             days < 0
               ? `🔒 SSL van ${site.name} is verlopen`
               : `🔒 SSL van ${site.name} verloopt over ${days} ${days === 1 ? "dag" : "dagen"}`,
-          text: `Het SSL-certificaat van ${site.url} ${days < 0 ? "is verlopen op" : "verloopt op"} ${formatDate(result.sslExpiresAt)}.\n\nOp Vercel wordt dit normaal automatisch vernieuwd. Gebeurt dat niet, kijk dan of het domein nog naar Vercel wijst.\n\n${link}`,
+          text: `Het SSL-certificaat van ${site.url} ${days < 0 ? "is verlopen op" : "verloopt op"} ${formatDate(result.sslExpiresAt)}.\n\nVercel en Cloudflare vernieuwen dit normaal automatisch. Gebeurt dat niet, kijk dan of het domein nog naar de hosting wijst.\n\n${link}`,
         });
         update.sslAlertSent = true;
       } else if (days >= SSL_WARN_DAYS && site.sslAlertSent) {

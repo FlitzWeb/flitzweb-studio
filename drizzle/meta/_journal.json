@@ -50,6 +50,13 @@
       "when": 1793141330687,
       "tag": "0006_quiet_blink",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794767987502,
+      "tag": "0007_lovely_nemesis",
+      "breakpoints": true
     }
   ]
 }

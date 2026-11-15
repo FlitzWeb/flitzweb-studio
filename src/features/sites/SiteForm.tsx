@@ -65,6 +65,7 @@ export function SiteForm({
             initial={site?.hosting ?? "vercel"}
             options={[
               { value: "vercel", label: "Vercel" },
+              { value: "cloudflare", label: "Cloudflare" },
               { value: "other", label: "Anders" },
             ]}
           />

@@ -9,6 +9,7 @@ import {
   formatPct,
   formatRelative,
 } from "@/lib/format";
+import { hostingLabels } from "@/features/sites/schema";
 import type { SiteWithClient } from "@/lib/sites";
 import { getIncidents, recentChecks, uptimeBySite } from "@/lib/uptime/queries";
 import { SSL_WARN_DAYS } from "@/lib/uptime/run";
@@ -99,7 +100,7 @@ export async function OverviewTab({ site }: { site: SiteWithClient }) {
           <dl className={styles.facts}>
             <Fact label="Klant">{site.client.name}</Fact>
             <Fact label="Hosting">
-              {site.hosting === "vercel" ? "Vercel" : "Anders"}
+              {hostingLabels[site.hosting]}
               {site.hostingDashboardUrl && (
                 <>
                   {" · "}

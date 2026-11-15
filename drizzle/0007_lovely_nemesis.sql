@@ -1,0 +1,1 @@
+ALTER TYPE "public"."hosting_provider" ADD VALUE 'cloudflare' BEFORE 'other';
