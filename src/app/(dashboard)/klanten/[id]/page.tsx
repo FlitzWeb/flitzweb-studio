@@ -3,6 +3,7 @@ import { Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ContactCard } from "@/features/clients/ContactCard";
+import { ContactLog } from "@/features/clients/ContactLog";
 import { PipelineCard } from "@/features/clients/PipelineCard";
 import { getClient } from "@/features/clients/queries";
 import { stageLabels, stageTone } from "@/features/clients/stages";
@@ -71,6 +72,7 @@ export default async function ClientPage({ params }: Props) {
       <div className={styles.stack}>
         <PipelineCard client={client} today={todayISO()} />
         <ContactCard client={client} />
+        <ContactLog client={client} today={todayISO()} />
       </div>
 
       {(isClient || sites.length > 0) && (

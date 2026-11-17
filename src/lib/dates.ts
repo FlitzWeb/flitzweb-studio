@@ -58,3 +58,12 @@ export function formatDue(iso: string, today = todayISO()) {
   if (d < 7) return `over ${d} dagen`;
   return shortFmt.format(toDate(iso));
 }
+
+/** A past date relative to today: "vandaag", "gisteren", "5 dagen geleden", "3 okt". */
+export function formatAgo(iso: string, today = todayISO()) {
+  const d = diffDays(iso, today);
+  if (d <= 0) return "vandaag";
+  if (d === 1) return "gisteren";
+  if (d < 31) return `${d} dagen geleden`;
+  return shortFmt.format(toDate(iso));
+}

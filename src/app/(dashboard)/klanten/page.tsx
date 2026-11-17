@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContactActions } from "@/features/clients/ContactActions";
 import { getClients } from "@/features/clients/queries";
+import { formatAgo, formatDue, todayISO } from "@/lib/dates";
 import { billingLabels } from "@/features/clients/schema";
 import { StatusDot, statusOf } from "@/features/uptime/StatusDot";
 import styles from "@/features/clients/clients.module.css";
@@ -12,6 +13,7 @@ export const metadata: Metadata = { title: "Klanten" };
 
 export default async function ClientsPage() {
   const clients = await getClients();
+  const today = todayISO();
 
   return (
     <>
@@ -56,6 +58,12 @@ export default async function ClientsPage() {
                   <span>
                     {client.sites.length} {client.sites.length === 1 ? "site" : "sites"}
                   </span>
+                  {client.contactLog[0] && <span>Contact {formatAgo(client.contactLog[0].occurredOn, today)}</span>}
+                  {client.nextFollowUp && (
+                    <span className={styles.due} data-due={client.nextFollowUp <= today || undefined}>
+                      Opvolgen {formatDue(client.nextFollowUp, today)}
+                    </span>
+                  )}
                   {client.billingType === "no_billing" && (
                     <span className="badge" data-tone="plain">{billingLabels.no_billing}</span>
                   )}

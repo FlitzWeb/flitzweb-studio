@@ -9,7 +9,10 @@ export function getClients() {
   return db.query.clients.findMany({
     where: eq(clients.stage, "client"),
     orderBy: asc(clients.name),
-    with: { sites: { columns: { id: true, name: true, status: true, isUp: true } } },
+    with: {
+      sites: { columns: { id: true, name: true, status: true, isUp: true } },
+      contactLog: { orderBy: [desc(contactLog.occurredOn), desc(contactLog.id)], limit: 1 },
+    },
   });
 }
 

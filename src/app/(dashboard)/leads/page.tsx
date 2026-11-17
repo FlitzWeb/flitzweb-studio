@@ -6,8 +6,7 @@ import { getLeads, getStageCounts } from "@/features/clients/queries";
 import { StageSelect } from "@/features/clients/StageSelect";
 import { contactKindLabels, isStage, OPEN_STAGES, stageLabels, type Stage } from "@/features/clients/stages";
 import styles from "@/features/clients/clients.module.css";
-import { formatDue, todayISO } from "@/lib/dates";
-import { formatDate } from "@/lib/format";
+import { formatAgo, formatDue, todayISO } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Leads" };
 
@@ -77,7 +76,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
                   {lead.websiteStatus && <span>{lead.websiteStatus}</span>}
                   {lead.lastContact && (
                     <span>
-                      {contactKindLabels[lead.lastContact.kind]} {formatDate(lead.lastContact.occurredOn)}
+                      {contactKindLabels[lead.lastContact.kind]} {formatAgo(lead.lastContact.occurredOn, today)}
                     </span>
                   )}
                 </div>
