@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { todayISO } from "@/lib/dates";
 import { formatDate, formatEuro } from "@/lib/format";
 import { MarkPaidButton } from "./MarkPaidButton";
 import type { MoneyItem } from "./queries";
@@ -22,6 +23,7 @@ export function MoneyList({
   empty: string;
 }) {
   if (items.length === 0) return <p className={styles.muted}>{empty}</p>;
+  const today = todayISO();
 
   return (
     <ul className={styles.list}>
@@ -53,7 +55,7 @@ export function MoneyList({
           <span className={`num ${styles.amount}`}>{formatEuro(item.amountCents)}</span>
           <div className={styles.itemTools}>
             <ReminderButton item={item} />
-            <MarkPaidButton kind={item.kind} id={item.id} paid={item.status === "paid"} />
+            <MarkPaidButton kind={item.kind} id={item.id} paid={item.status === "paid"} paidDate={item.paidDate} today={today} />
           </div>
         </li>
       ))}
