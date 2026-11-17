@@ -41,9 +41,17 @@ export function nextPayment(cost: Schedule, today: string) {
   return paymentDates(cost, today, to)[0] ?? null;
 }
 
-/** Recurring and not cancelled (yet). */
+/**
+ * Recurring, and it will still be charged: not cancelled, or cancelled but
+ * with a payment left before the end date. A cost cancelled per today with
+ * no payment left is already over.
+ */
 export const isRunning = (cost: Schedule, today: string) =>
-  cost.interval !== "once" && (!cost.endDate || cost.endDate >= today);
+  cost.interval !== "once" && (!cost.endDate || nextPayment(cost, today) !== null);
+
+/** A monthly cost whose first payment is still to come (e.g. a plan you switch to next month). */
+export const isPlanned = (cost: Schedule, today: string) =>
+  cost.interval === "monthly" && cost.startDate > today && isRunning(cost, today);
 
 /** What a recurring cost comes down to per month (yearly / 12). */
 export const perMonthCents = (cost: Schedule) =>

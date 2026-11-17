@@ -5,7 +5,7 @@ import { categoryLabels, intervalSuffix } from "./labels";
 import type { CostRow } from "./queries";
 
 /** Costs as rows. `show` picks the date that matters for the list. */
-export function CostList({ costs, show, empty }: { costs: CostRow[]; show: "next" | "bought" | "stopped"; empty: string }) {
+export function CostList({ costs, show, empty }: { costs: CostRow[]; show: "next" | "planned" | "bought" | "stopped"; empty: string }) {
   if (costs.length === 0) return <p className={styles.muted}>{empty}</p>;
 
   return (
@@ -21,8 +21,9 @@ export function CostList({ costs, show, empty }: { costs: CostRow[]; show: "next
               {show === "next" && (c.next ? `volgende ${formatDate(c.next)}` : "geen betaling meer")}
               {show === "next" && c.endDate && ` · opgezegd per ${formatDate(c.endDate)}`}
               {show === "next" && c.interval === "yearly" && ` · ≈ ${formatEuro(c.perMonthCents)} /mnd`}
+              {show === "planned" && `start ${formatDate(c.startDate)} · telt nog niet mee`}
               {show === "bought" && formatDate(c.startDate)}
-              {show === "stopped" && `${formatDate(c.startDate)} – ${formatDate(c.endDate!)} · ${formatEuro(c.paidTotalCents)} totaal`}
+              {show === "stopped" && `${formatDate(c.startDate)} – ${formatDate(c.endDate!)} · ${formatEuro(c.paidTotalCents)} totaal betaald`}
             </span>
           </div>
           <span className={`num ${styles.amount}`}>

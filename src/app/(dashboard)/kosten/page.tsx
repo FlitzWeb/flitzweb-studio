@@ -38,7 +38,11 @@ export default async function CostsPage() {
           icon={<Receipt />}
           label="Per maand"
           value={formatEuro(o.perMonthCents)}
-          hint={`≈ ${formatEuro(o.perMonthCents * 12)} per jaar`}
+          hint={
+            o.planned.length
+              ? `Wordt ${formatEuro(o.perMonthCents + o.plannedPerMonthCents)} vanaf ${formatDate(o.planned[0].startDate)}`
+              : `≈ ${formatEuro(o.perMonthCents * 12)} per jaar`
+          }
         />
         <KpiCard
           icon={<CalendarClock />}
@@ -63,6 +67,15 @@ export default async function CostsPage() {
         </div>
         <CostList costs={o.running} show="next" empty="Nog geen vaste kosten. Voeg bijvoorbeeld je Claude-abonnement of een domein toe." />
       </section>
+
+      {o.planned.length > 0 && (
+        <section className={styles.section}>
+          <div className={styles.sectionHead}>
+            <h2>Gepland</h2>
+          </div>
+          <CostList costs={o.planned} show="planned" empty="" />
+        </section>
+      )}
 
       {o.oneOff.length > 0 && (
         <section className={styles.section}>
