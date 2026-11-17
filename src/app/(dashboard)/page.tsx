@@ -8,6 +8,7 @@ import { getDueFollowUps, getStageCounts } from "@/features/clients/queries";
 import { OPEN_STAGES, stageLabels } from "@/features/clients/stages";
 import { MarkPaidButton } from "@/features/money/MarkPaidButton";
 import { getMoneySummary } from "@/features/money/queries";
+import { ReminderButton } from "@/features/money/ReminderButton";
 import { CheckNowButton } from "@/features/uptime/CheckNowButton";
 import { SiteTable } from "@/features/uptime/SiteTable";
 import { addDays, formatDue, todayISO } from "@/lib/dates";
@@ -144,6 +145,7 @@ export default async function OverviewPage() {
                     </small>
                   </Link>
                   <div className={styles.todoTools}>
+                    <ReminderButton item={i} />
                     <MarkPaidButton kind={i.kind} id={i.id} paid={false} />
                   </div>
                 </li>

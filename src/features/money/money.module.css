@@ -132,3 +132,9 @@
   background: var(--ok-soft);
   color: var(--ok);
 }
+
+.itemTools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

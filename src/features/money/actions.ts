@@ -33,7 +33,9 @@ export async function savePayment(id: number | undefined, _prev: FormState, form
   const mismatch = await siteMismatch(data.clientId, data.siteId, formValues(formData));
   if (mismatch) return mismatch;
 
-  if (id) await db.update(payments).set(data).where(eq(payments.id, id));
+  // A due date moved into the future may warn again when it passes.
+  const rearm = data.dueDate >= todayISO() ? { overdueAlertSent: false } : {};
+  if (id) await db.update(payments).set({ ...data, ...rearm }).where(eq(payments.id, id));
   else await db.insert(payments).values(data);
   revalidatePath("/", "layout");
   redirect(returnTo(formData));

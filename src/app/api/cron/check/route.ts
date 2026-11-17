@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { ensureCharges } from "@/features/money/charges";
+import { sendOverdueAlerts } from "@/features/money/overdueAlerts";
 import { pruneEvents } from "@/lib/events/prune";
 import { runChecks } from "@/lib/uptime/run";
 
@@ -22,8 +23,9 @@ async function handle(request: Request) {
   }
   const results = await runChecks();
   await ensureCharges(); // new month → new subscription charges
+  const overdueAlerts = await sendOverdueAlerts(); // one email when something goes past its due date
   await pruneEvents();
-  return Response.json({ checked: results.length, results });
+  return Response.json({ checked: results.length, overdueAlerts, results });
 }
 
 export const GET = handle;

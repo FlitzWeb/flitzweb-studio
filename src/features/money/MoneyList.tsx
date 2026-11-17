@@ -2,6 +2,7 @@ import Link from "next/link";
 import { formatDate, formatEuro } from "@/lib/format";
 import { MarkPaidButton } from "./MarkPaidButton";
 import type { MoneyItem } from "./queries";
+import { ReminderButton } from "./ReminderButton";
 import { moneyStatusLabels } from "./status";
 import styles from "./money.module.css";
 
@@ -35,7 +36,11 @@ export function MoneyList({
               <span className={styles.pill} data-status={item.status}>
                 {moneyStatusLabels[item.status]}
               </span>
-              {item.paidDate ? `betaald ${formatDate(item.paidDate)}` : `vervalt ${formatDate(item.dueDate)}`}
+              {item.paidDate
+                ? `betaald ${formatDate(item.paidDate)}`
+                : item.daysLate > 0
+                  ? `${item.daysLate} ${item.daysLate === 1 ? "dag" : "dagen"} te laat · verviel ${formatDate(item.dueDate)}`
+                  : `vervalt ${formatDate(item.dueDate)}`}
               {item.siteName && ` · ${item.siteName}`}
               {item.kind === "charge" && " · abonnement"}
               {item.paymentUrl && item.status !== "paid" && (
@@ -46,7 +51,10 @@ export function MoneyList({
             </span>
           </div>
           <span className={`num ${styles.amount}`}>{formatEuro(item.amountCents)}</span>
-          <MarkPaidButton kind={item.kind} id={item.id} paid={item.status === "paid"} />
+          <div className={styles.itemTools}>
+            <ReminderButton item={item} />
+            <MarkPaidButton kind={item.kind} id={item.id} paid={item.status === "paid"} />
+          </div>
         </li>
       ))}
     </ul>

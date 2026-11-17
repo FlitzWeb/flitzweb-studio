@@ -2,7 +2,7 @@ import "server-only";
 import { and, eq, gte, isNull, or } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { clients, db, payments, sites, subscriptionCharges, subscriptions } from "@/db";
-import { addDays, formatMonth, monthStart, todayISO } from "@/lib/dates";
+import { addDays, diffDays, formatMonth, monthStart, todayISO } from "@/lib/dates";
 import { ensureCharges } from "./charges";
 import { moneyStatus, type MoneyStatus } from "./status";
 import { payingFrom, subscriptionState, type SubscriptionState } from "./subscriptionState";
@@ -21,6 +21,18 @@ export type MoneyItem = {
   status: MoneyStatus;
   editHref: string;
   paymentUrl: string | null;
+  /** Days past the due date (0 when not late or already paid). */
+  daysLate: number;
+  /** The "this is overdue" email to yourself already went out. */
+  alertSent: boolean;
+  /** How to reach the client, for payment reminders. */
+  contact: {
+    contactPerson: string | null;
+    phone: string | null;
+    whatsapp: string | null;
+    email: string | null;
+    preferredChannel: "phone" | "whatsapp" | "email" | null;
+  };
 };
 
 type Filter = { clientId?: number; unpaid?: boolean; paidFrom?: string };
@@ -41,15 +53,25 @@ export async function getMoneyItems(filter: Filter = {}): Promise<MoneyItem[]> {
       filter.paidFrom ? gte(paidDate, filter.paidFrom) : undefined,
     );
 
+  const contact = {
+    contactPerson: clients.contactPerson,
+    phone: clients.phone,
+    whatsapp: clients.whatsapp,
+    email: clients.email,
+    preferredChannel: clients.preferredChannel,
+  };
+  const daysLate = (i: { paidDate: string | null; dueDate: string }) =>
+    i.paidDate ? 0 : Math.max(0, diffDays(i.dueDate, today));
+
   const [invoices, charges] = await Promise.all([
     db
-      .select({ p: payments, clientName: clients.name, siteName: sites.name })
+      .select({ p: payments, clientName: clients.name, siteName: sites.name, contact })
       .from(payments)
       .innerJoin(clients, eq(clients.id, payments.clientId))
       .leftJoin(sites, eq(sites.id, payments.siteId))
       .where(conditions(payments.paidDate, payments.clientId)),
     db
-      .select({ c: subscriptionCharges, s: subscriptions, clientName: clients.name, siteName: sites.name })
+      .select({ c: subscriptionCharges, s: subscriptions, clientName: clients.name, siteName: sites.name, contact })
       .from(subscriptionCharges)
       .innerJoin(subscriptions, eq(subscriptions.id, subscriptionCharges.subscriptionId))
       .innerJoin(clients, eq(clients.id, subscriptions.clientId))
@@ -58,7 +80,7 @@ export async function getMoneyItems(filter: Filter = {}): Promise<MoneyItem[]> {
   ]);
 
   const items: MoneyItem[] = [
-    ...invoices.map(({ p, clientName, siteName }) => ({
+    ...invoices.map(({ p, clientName, siteName, contact }) => ({
       kind: "invoice" as const,
       id: p.id,
       clientId: p.clientId,
@@ -71,8 +93,11 @@ export async function getMoneyItems(filter: Filter = {}): Promise<MoneyItem[]> {
       status: moneyStatus(p, today),
       editHref: `/geld/facturen/${p.id}`,
       paymentUrl: p.paymentUrl,
+      daysLate: daysLate(p),
+      alertSent: p.overdueAlertSent,
+      contact,
     })),
-    ...charges.map(({ c, s, clientName, siteName }) => ({
+    ...charges.map(({ c, s, clientName, siteName, contact }) => ({
       kind: "charge" as const,
       id: c.id,
       clientId: s.clientId,
@@ -85,6 +110,9 @@ export async function getMoneyItems(filter: Filter = {}): Promise<MoneyItem[]> {
       status: moneyStatus(c, today),
       editHref: `/geld/abonnementen/${s.id}`,
       paymentUrl: null,
+      daysLate: daysLate(c),
+      alertSent: c.overdueAlertSent,
+      contact,
     })),
   ];
   return items.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
