@@ -391,6 +391,7 @@ code {
 
 .field {
   display: grid;
+  align-content: start; /* don't stretch inputs to match a neighbour with a hint */
   gap: 6px;
 }
 .field-error {

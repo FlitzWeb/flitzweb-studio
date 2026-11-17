@@ -266,6 +266,8 @@ export const subscriptions = pgTable(
     amountCents: integer("amount_cents").notNull(),
     startDate: date("start_date").notNull(),
     billingDay: integer("billing_day").notNull().default(1), // 1–28
+    // The first N months from the start month are not charged ("first month free").
+    freeMonths: integer("free_months").notNull().default(0),
     endDate: date("end_date"),
     active: boolean().notNull().default(true),
     createdAt: createdAt(),

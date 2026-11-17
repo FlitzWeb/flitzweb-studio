@@ -26,7 +26,7 @@ export async function ClientMoney({ client, returnTo }: { client: Client; return
     .sort((a, b) => b.paidDate!.localeCompare(a.paidDate!));
   const sum = (list: typeof items) => list.reduce((t, i) => t + i.amountCents, 0);
   const overdue = open.filter((i) => i.status === "overdue");
-  const mrr = subscriptions.filter((s) => s.running).reduce((t, s) => t + s.amountCents, 0);
+  const mrr = subscriptions.filter((s) => s.state === "running").reduce((t, s) => t + s.amountCents, 0);
   const q = `klant=${client.id}&terug=${encodeURIComponent(returnTo)}`;
 
   return (

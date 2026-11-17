@@ -1,0 +1,1 @@
+ALTER TABLE "subscriptions" ADD COLUMN "free_months" integer DEFAULT 0 NOT NULL;

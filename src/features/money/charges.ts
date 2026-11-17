@@ -1,12 +1,14 @@
 import "server-only";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull, lt } from "drizzle-orm";
 import { db, subscriptionCharges, subscriptions } from "@/db";
 import { addMonths, dayInMonth, monthStart, todayISO } from "@/lib/dates";
+import { payingFrom } from "./subscriptionState";
 
 /**
  * Makes sure every active subscription has a charge row for each month from
- * its start up to the current month (or its end date). Idempotent, cheap,
- * and called whenever money pages load and from the cron job.
+ * its start up to the current month (or its end date). Free months are
+ * skipped. Idempotent, cheap, and called whenever money pages load and from
+ * the cron job.
  */
 export async function ensureCharges() {
   const today = todayISO();
@@ -14,8 +16,23 @@ export async function ensureCharges() {
 
   const rows: (typeof subscriptionCharges.$inferInsert)[] = [];
   for (const sub of subs) {
+    const first = payingFrom(sub);
+
+    // Free months added after charges already existed: drop those unpaid charges.
+    if (sub.freeMonths > 0) {
+      await db
+        .delete(subscriptionCharges)
+        .where(
+          and(
+            eq(subscriptionCharges.subscriptionId, sub.id),
+            lt(subscriptionCharges.period, first),
+            isNull(subscriptionCharges.paidDate),
+          ),
+        );
+    }
+
     const last = monthStart(sub.endDate && sub.endDate < today ? sub.endDate : today);
-    for (let period = monthStart(sub.startDate); period <= last; period = addMonths(period, 1)) {
+    for (let period = first; period <= last; period = addMonths(period, 1)) {
       const billing = dayInMonth(period, sub.billingDay);
       rows.push({
         subscriptionId: sub.id,

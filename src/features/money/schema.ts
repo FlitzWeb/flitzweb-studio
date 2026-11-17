@@ -46,6 +46,11 @@ export const subscriptionSchema = z
       .int()
       .min(1, "Kies een dag van 1 t/m 28")
       .max(28, "Kies een dag van 1 t/m 28"),
+    freeMonths: z.coerce
+      .number()
+      .int("Vul een heel aantal maanden in")
+      .min(0, "Kies 0 t/m 12 maanden")
+      .max(12, "Kies 0 t/m 12 maanden"),
     endDate: optionalDate,
     active: z.enum(["true", "false"]).transform((v) => v === "true"),
   })

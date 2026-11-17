@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Geld" };
 export default async function MoneyPage() {
   const [summary, subscriptions] = await Promise.all([
     getMoneySummary(),
-    getSubscriptions({ activeOnly: true }),
+    getSubscriptions({ current: true }),
   ]);
 
   return (
@@ -63,7 +63,7 @@ export default async function MoneyPage() {
 
       <section className={styles.section}>
         <div className={styles.sectionHead}>
-          <h2>Lopende abonnementen</h2>
+          <h2>Abonnementen</h2>
         </div>
         <SubscriptionList subscriptions={subscriptions} showClient returnTo="/geld" empty="Nog geen abonnementen." />
       </section>

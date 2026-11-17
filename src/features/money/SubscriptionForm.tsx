@@ -67,17 +67,27 @@ export function SubscriptionForm({
           <Field {...f} name="startDate" label="Startdatum" type="date" initial={s?.startDate ?? defaults.startDate} />
           <Field {...f} name="endDate" label="Einddatum" type="date" initial={s?.endDate} hint="Leeg = loopt door" />
         </div>
-        <Field
-          {...f}
-          as="select"
-          name="active"
-          label="Status"
-          initial={String(s?.active ?? true)}
-          options={[
-            { value: "true", label: "Actief" },
-            { value: "false", label: "Gestopt (geen nieuwe termijnen)" },
-          ]}
-        />
+        <div className={styles.row}>
+          <Field
+            {...f}
+            name="freeMonths"
+            label="Gratis maanden"
+            type="number"
+            initial={s?.freeMonths ?? 0}
+            hint="Eerste maand gratis? Vul 1 in."
+          />
+          <Field
+            {...f}
+            as="select"
+            name="active"
+            label="Status"
+            initial={String(s?.active ?? true)}
+            options={[
+              { value: "true", label: "Actief" },
+              { value: "false", label: "Gestopt (geen nieuwe termijnen)" },
+            ]}
+          />
+        </div>
       </section>
 
       <div className={styles.footer}>

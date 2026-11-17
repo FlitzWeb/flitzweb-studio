@@ -1,10 +1,11 @@
 import "server-only";
-import { and, eq, gte, isNull, lte, or, sql } from "drizzle-orm";
+import { and, eq, gte, isNull, or } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { clients, db, payments, sites, subscriptionCharges, subscriptions } from "@/db";
 import { addDays, formatMonth, monthStart, todayISO } from "@/lib/dates";
 import { ensureCharges } from "./charges";
 import { moneyStatus, type MoneyStatus } from "./status";
+import { payingFrom, subscriptionState, type SubscriptionState } from "./subscriptionState";
 
 /** An invoice or a monthly subscription charge, in one shape for lists and totals. */
 export type MoneyItem = {
@@ -89,8 +90,14 @@ export async function getMoneyItems(filter: Filter = {}): Promise<MoneyItem[]> {
   return items.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
 }
 
-/** Subscriptions with client + site names. Active ones first. */
-export async function getSubscriptions(filter: { clientId?: number; activeOnly?: boolean } = {}) {
+const stateOrder: Record<SubscriptionState, number> = { running: 0, free: 1, upcoming: 2, stopped: 3 };
+
+/**
+ * Subscriptions with client + site names and their current state.
+ * `current` leaves out stopped/ended ones but keeps upcoming and free ones.
+ */
+export async function getSubscriptions(filter: { clientId?: number; current?: boolean } = {}) {
+  const today = todayISO();
   const rows = await db
     .select({ s: subscriptions, clientName: clients.name, siteName: sites.name })
     .from(subscriptions)
@@ -100,36 +107,34 @@ export async function getSubscriptions(filter: { clientId?: number; activeOnly?:
       and(
         paying,
         filter.clientId ? eq(subscriptions.clientId, filter.clientId) : undefined,
-        filter.activeOnly ? isRunning() : undefined,
+        filter.current
+          ? and(eq(subscriptions.active, true), or(isNull(subscriptions.endDate), gte(subscriptions.endDate, today)))
+          : undefined,
       ),
     );
   return rows
-    .map(({ s, clientName, siteName }) => ({ ...s, clientName, siteName, running: isRunningNow(s) }))
-    .sort((a, b) => Number(b.running) - Number(a.running) || a.clientName.localeCompare(b.clientName, "nl"));
+    .map(({ s, clientName, siteName }) => ({
+      ...s,
+      clientName,
+      siteName,
+      state: subscriptionState(s, today),
+      payingFrom: payingFrom(s),
+    }))
+    .sort(
+      (a, b) =>
+        stateOrder[a.state] - stateOrder[b.state] ||
+        a.startDate.localeCompare(b.startDate) ||
+        a.clientName.localeCompare(b.clientName, "nl"),
+    );
 }
 
-// A subscription counts towards MRR when it's active and today is within its dates.
-const isRunning = () => {
-  const today = todayISO();
-  return and(
-    eq(subscriptions.active, true),
-    lte(subscriptions.startDate, today),
-    or(isNull(subscriptions.endDate), gte(subscriptions.endDate, today)),
-  );
-};
-const isRunningNow = (s: { active: boolean; startDate: string; endDate: string | null }) => {
-  const today = todayISO();
-  return s.active && s.startDate <= today && (!s.endDate || s.endDate >= today);
-};
-
-/** Monthly recurring revenue: running subscriptions of paying clients. */
+/**
+ * Monthly recurring revenue: subscriptions of paying clients that are being
+ * charged right now (not upcoming, not in a free month, not stopped).
+ */
 export async function getMrrCents() {
-  const [mrr] = await db
-    .select({ cents: sql<number>`coalesce(sum(${subscriptions.amountCents}), 0)`.mapWith(Number) })
-    .from(subscriptions)
-    .innerJoin(clients, eq(clients.id, subscriptions.clientId))
-    .where(and(paying, isRunning()));
-  return mrr.cents;
+  const subs = await getSubscriptions({ current: true });
+  return subs.filter((s) => s.state === "running").reduce((t, s) => t + s.amountCents, 0);
 }
 
 /** Totals for the Geld page. */

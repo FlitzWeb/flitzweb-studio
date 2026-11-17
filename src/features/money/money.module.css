@@ -123,7 +123,12 @@
   background: var(--danger-soft);
   color: var(--danger);
 }
-.pill[data-status="paid"] {
+.pill[data-status="free"] {
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+.pill[data-status="paid"],
+.pill[data-status="running"] {
   background: var(--ok-soft);
   color: var(--ok);
 }
