@@ -20,6 +20,7 @@ export function CostList({ costs, show, empty }: { costs: CostRow[]; show: "next
               <span className={styles.pill}>{categoryLabels[c.category]}</span>
               {show === "next" && (c.next ? `volgende ${formatDate(c.next)}` : "geen betaling meer")}
               {show === "next" && c.endDate && ` · opgezegd per ${formatDate(c.endDate)}`}
+              {show !== "bought" && c.firstAmountCents != null && ` · eerste betaling ${formatEuro(c.firstAmountCents)}`}
               {show === "next" && c.interval === "yearly" && ` · ≈ ${formatEuro(c.perMonthCents)} /mnd`}
               {show === "planned" && `start ${formatDate(c.startDate)} · telt nog niet mee`}
               {show === "bought" && formatDate(c.startDate)}

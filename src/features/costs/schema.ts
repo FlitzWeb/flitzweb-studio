@@ -15,6 +15,16 @@ export const costSchema = z
       return cents;
     }),
     interval: z.enum(["monthly", "yearly", "once"]),
+    // Optional: empty means the first payment is the normal amount.
+    firstAmountCents: z.string().transform((v, ctx) => {
+      if (!v.trim()) return null;
+      const cents = parseEuro(v);
+      if (cents === null) {
+        ctx.addIssue({ code: "custom", message: "Vul een bedrag in, bijv. 0,59, of laat leeg" });
+        return z.NEVER;
+      }
+      return cents;
+    }),
     startDate: z.iso.date({ message: "Kies een datum" }),
     endDate: optionalDate,
     url: optionalUrl,

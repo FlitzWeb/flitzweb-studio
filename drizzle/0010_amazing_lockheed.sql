@@ -1,0 +1,1 @@
+ALTER TABLE "costs" ADD COLUMN "first_amount_cents" integer;

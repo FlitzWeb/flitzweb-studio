@@ -40,6 +40,14 @@ export function CostForm({ cost, today }: { cost?: Cost; today: string }) {
           />
           <Field {...f} name="endDate" label="Opgezegd per" type="date" initial={c?.endDate} hint="Leeg = loopt door" />
         </div>
+        <Field
+          {...f}
+          name="firstAmountCents"
+          label="Eerste betaling was anders (€, optioneel)"
+          initial={c?.firstAmountCents != null ? centsToInput(c.firstAmountCents) : ""}
+          placeholder="0,59"
+          hint="Alleen bij een actieprijs of korting op de eerste betaling. Daarna geldt het gewone bedrag."
+        />
         <Field {...f} name="url" label="Link naar account (optioneel)" initial={c?.url} inputMode="url" placeholder="claude.ai/settings/billing" />
         <Field {...f} as="textarea" name="notes" label="Notities (optioneel)" initial={c?.notes} />
       </section>

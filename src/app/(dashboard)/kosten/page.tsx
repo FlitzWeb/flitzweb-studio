@@ -47,7 +47,7 @@ export default async function CostsPage() {
         <KpiCard
           icon={<CalendarClock />}
           label="Volgende betaling"
-          value={o.upcoming ? formatEuro(o.upcoming.amountCents) : null}
+          value={o.upcoming ? formatEuro(o.upcoming.nextAmountCents) : null}
           hint={o.upcoming ? `${o.upcoming.name} · ${formatDate(o.upcoming.next!)}` : "Niets gepland"}
         />
         <KpiCard icon={<Wallet />} label={`Betaald in ${year}`} value={formatEuro(o.paidThisYearCents)} hint="Alle kosten samen" />

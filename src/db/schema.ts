@@ -353,6 +353,8 @@ export const costs = pgTable("costs", {
   category: costCategory().notNull().default("software"),
   amountCents: integer("amount_cents").notNull(),
   interval: costInterval().notNull().default("monthly"),
+  // Only when the first payment was a different amount (intro price, upgrade credit).
+  firstAmountCents: integer("first_amount_cents"),
   // First payment (or the purchase date for one-off costs).
   startDate: date("start_date").notNull(),
   // Cancelled: no payments after this date.

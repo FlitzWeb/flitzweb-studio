@@ -2,7 +2,10 @@
 // Works on "YYYY-MM-DD" strings, like lib/dates.ts.
 import type { Cost } from "@/db";
 
-type Schedule = Pick<Cost, "amountCents" | "interval" | "startDate" | "endDate">;
+type Schedule = Pick<Cost, "amountCents" | "interval" | "startDate" | "endDate"> & {
+  /** Set when the very first payment was a different amount (intro price). */
+  firstAmountCents?: number | null;
+};
 
 const MONTHS = { monthly: 1, yearly: 12, once: 0 } as const;
 
@@ -29,9 +32,15 @@ export function paymentDates(cost: Schedule, from: string, to: string) {
   return dates;
 }
 
+/** What the payment on `date` costs: the first one can have its own amount. */
+export const amountOn = (cost: Schedule, date: string) =>
+  date === cost.startDate && cost.firstAmountCents != null && cost.interval !== "once"
+    ? cost.firstAmountCents
+    : cost.amountCents;
+
 /** Total paid from `from` to `to`. */
 export const paidBetween = (cost: Schedule, from: string, to: string) =>
-  paymentDates(cost, from, to).length * cost.amountCents;
+  paymentDates(cost, from, to).reduce((t, date) => t + amountOn(cost, date), 0);
 
 /** The first payment on or after `today`, or null when there is none. */
 export function nextPayment(cost: Schedule, today: string) {
