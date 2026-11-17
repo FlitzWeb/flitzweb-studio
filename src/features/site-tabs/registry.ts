@@ -11,6 +11,7 @@ import { OverviewTab } from "./OverviewTab";
 import { PaymentsTab } from "./PaymentsTab";
 import { ReportsTab } from "./ReportsTab";
 import { StatsTab } from "./StatsTab";
+import { SummaryTab } from "./SummaryTab";
 import { TrackingTab } from "./TrackingTab";
 import { VisitorsTab } from "./VisitorsTab";
 
@@ -43,6 +44,7 @@ export const siteTabs: SiteTab[] = [
     visible: (site) => site.client.billingType === "paying",
   },
   { slug: "stats", label: "Stats", component: StatsTab },
+  { slug: "maandrapport", label: "Maandrapport", component: SummaryTab },
   { slug: "events", label: "Events", component: EventsTab, hidden: true },
   { slug: "bezoekers", label: "Bezoekers", component: VisitorsTab, hidden: true },
   { slug: "rapporten", label: "Rapporten", component: ReportsTab, hidden: true },
