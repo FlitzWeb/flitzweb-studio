@@ -13,6 +13,7 @@ import { ReportsTab } from "./ReportsTab";
 import { StatsTab } from "./StatsTab";
 import { SummaryTab } from "./SummaryTab";
 import { TrackingTab } from "./TrackingTab";
+import { VersionsTab } from "./VersionsTab";
 import { VisitorsTab } from "./VisitorsTab";
 
 export type TabProps = {
@@ -43,6 +44,7 @@ export const siteTabs: SiteTab[] = [
     // Family / pro bono clients have nothing to bill.
     visible: (site) => site.client.billingType === "paying",
   },
+  { slug: "versies", label: "Versies", component: VersionsTab },
   { slug: "stats", label: "Stats", component: StatsTab },
   { slug: "maandrapport", label: "Maandrapport", component: SummaryTab },
   { slug: "events", label: "Events", component: EventsTab, hidden: true },

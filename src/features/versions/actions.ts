@@ -1,0 +1,58 @@
+"use server";
+
+import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { contactLog, db, sites } from "@/db";
+import { requireSession } from "@/lib/auth";
+import { todayISO } from "@/lib/dates";
+import { compareBranches, mergeBranch } from "@/lib/github";
+
+const LIVE_BRANCH = "main";
+
+/** Remembers that the concept link went to the client (so the Studio can say "waiting for approval"). */
+export async function markConceptSent(siteId: number) {
+  await requireSession();
+  await db.update(sites).set({ conceptSentAt: new Date(), conceptApprovedAt: null }).where(eq(sites.id, siteId));
+  revalidatePath("/", "layout");
+}
+
+/** The client said yes (or you undo that). */
+export async function setConceptApproved(siteId: number, approved: boolean) {
+  await requireSession();
+  await db.update(sites).set({ conceptApprovedAt: approved ? new Date() : null }).where(eq(sites.id, siteId));
+  revalidatePath("/", "layout");
+}
+
+const publishErrors = {
+  "no-token": "De Studio heeft nog geen GitHub-sleutel (GITHUB_TOKEN), dus kan niet publiceren.",
+  conflict: "Live en concept botsen met elkaar. Los dat eerst op in de code (main in de concept-branch mergen).",
+  "no-access": "GitHub weigert toegang tot deze repo. Controleer de sleutel en de naam van de repo.",
+  error: "Publiceren lukte niet. Probeer het zo nog eens.",
+} as const;
+
+/**
+ * Puts the concept live: merges the concept branch into main on GitHub, after
+ * which the host deploys it. Notes it in the client's contact log.
+ */
+export async function publishConcept(siteId: number): Promise<{ error?: string; done?: boolean }> {
+  await requireSession();
+  const site = await db.query.sites.findFirst({ where: eq(sites.id, siteId) });
+  if (!site?.repo) return { error: "Vul eerst de GitHub-repo in bij Bewerken." };
+
+  const diff = await compareBranches(site.repo, LIVE_BRANCH, site.conceptBranch);
+  if (diff.ok && diff.ahead === 0) return { error: "Er is niets nieuws om live te zetten." };
+
+  const result = await mergeBranch(site.repo, LIVE_BRANCH, site.conceptBranch, `Zet concept live (${site.name})`);
+  if (!result.ok) return { error: publishErrors[result.reason] };
+
+  await db.update(sites).set({ conceptSentAt: null, conceptApprovedAt: null }).where(eq(sites.id, siteId));
+  const changes = diff.ok && diff.commits.length ? `: ${diff.commits.slice(0, 5).map((c) => c.message).join("; ")}` : "";
+  await db.insert(contactLog).values({
+    clientId: site.clientId,
+    kind: "note",
+    body: `Concept van ${site.name} live gezet${changes}`.slice(0, 600),
+    occurredOn: todayISO(),
+  });
+  revalidatePath("/", "layout");
+  return { done: true };
+}

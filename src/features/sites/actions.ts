@@ -28,7 +28,12 @@ export async function saveSite(
       before && before.url !== values.url
         ? { isUp: null, downSince: null, sslAlertSent: false }
         : {};
-    await db.update(sites).set({ ...values, ...reset }).where(eq(sites.id, siteId));
+    // A different concept address or branch is a new concept: nothing sent or approved yet.
+    const newConcept =
+      before && (before.conceptUrl !== values.conceptUrl || before.conceptBranch !== values.conceptBranch)
+        ? { conceptSentAt: null, conceptApprovedAt: null }
+        : {};
+    await db.update(sites).set({ ...values, ...reset, ...newConcept }).where(eq(sites.id, siteId));
   } else {
     [{ id: siteId }] = await db
       .insert(sites)

@@ -10,6 +10,19 @@ export const siteSchema = z.object({
   registrar: optionalText,
   goLiveDate: optionalDate,
   status: z.enum(["live", "in_progress", "paused"]),
+  repo: z
+    .string()
+    .trim()
+    // Accept a pasted GitHub link as well as "owner/name".
+    .transform((v) => v.replace(/^https?:\/\/github\.com\//i, "").replace(/\.git$/i, "").replace(/\/$/, ""))
+    .pipe(z.union([z.literal(""), z.string().regex(/^[\w.-]+\/[\w.-]+$/, "Schrijf het als eigenaar/naam, bijv. FlitzWeb/Hakiki-Doner")]))
+    .transform((v) => v || null),
+  conceptBranch: z
+    .string()
+    .trim()
+    .transform((v) => v || "concept")
+    .pipe(z.string().regex(/^[\w./-]+$/, "Alleen letters, cijfers, - _ . en /")),
+  conceptUrl: optionalUrl,
 });
 
 export const hostingLabels = {

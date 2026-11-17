@@ -1,0 +1,126 @@
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+}
+.head h2 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+.address {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+.address:hover {
+  color: var(--brand-ink);
+}
+
+/* A desktop-width page shown at half size. */
+.frame {
+  position: relative;
+  margin-top: var(--space-4);
+  aspect-ratio: 16 / 11;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: #fff;
+  overflow: hidden;
+}
+.frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 200%;
+  height: 200%;
+  border: 0;
+  transform: scale(0.5);
+  transform-origin: 0 0;
+}
+.frameEmpty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: var(--space-5);
+  background: var(--surface-2);
+  color: var(--ink-3);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.changes {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+}
+.changes li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.875rem;
+}
+.changes time {
+  flex: none;
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+}
+
+.note {
+  margin: var(--space-3) 0 0;
+  color: var(--ink-2);
+  font-size: 0.875rem;
+}
+.note[data-tone="warn"] {
+  color: var(--warn);
+}
+
+.confirm {
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+.confirm p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+.confirm div {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.steps {
+  margin: var(--space-3) 0 0;
+  padding-left: 1.2em;
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}

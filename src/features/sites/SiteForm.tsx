@@ -82,6 +82,24 @@ export function SiteForm({
         />
       </section>
 
+      <section className={styles.section}>
+        <h2>Versies (live en concept)</h2>
+        <div className={styles.row}>
+          <Field {...f} name="repo" label="GitHub-repo" initial={site?.repo} placeholder="FlitzWeb/Hakiki-Doner" hint="De main-branch is de live site" />
+          <Field {...f} name="conceptBranch" label="Concept-branch" initial={site?.conceptBranch ?? "concept"} hint="Hierop werk je aan wijzigingen" />
+        </div>
+        <Field
+          {...f}
+          name="conceptUrl"
+          label="Adres van het concept"
+          type="url"
+          inputMode="url"
+          initial={site?.conceptUrl}
+          placeholder="https://concept.voorbeeld.nl"
+          hint="Het voorbeeldadres dat je hosting voor de concept-branch maakt. Dit is de link die de klant krijgt."
+        />
+      </section>
+
       <div className={styles.footer}>
         <div>
           <button className="btn btn-primary" type="submit" disabled={pending}>

@@ -1,4 +1,4 @@
-import { AlarmClock, ArrowRight, CircleAlert, Globe, ListChecks, MessageCircle, Plus, Target, Wallet, WifiOff } from "lucide-react";
+import { AlarmClock, ArrowRight, CircleAlert, GitBranch, Globe, ListChecks, MessageCircle, Plus, Target, Wallet, WifiOff } from "lucide-react";
 import Link from "next/link";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { Gauge } from "@/components/charts/Gauge";
@@ -12,7 +12,7 @@ import { ReminderButton } from "@/features/money/ReminderButton";
 import { CheckNowButton } from "@/features/uptime/CheckNowButton";
 import { SiteTable } from "@/features/uptime/SiteTable";
 import { addDays, formatDue, todayISO } from "@/lib/dates";
-import { formatDuration, formatEuro } from "@/lib/format";
+import { formatDuration, formatEuro, formatRelative } from "@/lib/format";
 import { getSiteOverviews } from "@/lib/uptime/queries";
 import styles from "./overview.module.css";
 
@@ -32,7 +32,9 @@ export default async function OverviewPage() {
   const overdue = money.outstanding.filter((i) => i.status === "overdue");
   const dueSoon = money.outstanding.filter((i) => i.status === "awaiting" && i.dueDate <= addDays(today, 7));
   const openLeads = OPEN_STAGES.reduce((t, s) => t + stages[s], 0);
-  const todoCount = down.length + overdue.length + followUps.length;
+  const toPublish = sites.filter((s) => s.conceptApprovedAt);
+  const awaitingClient = sites.filter((s) => s.conceptSentAt && !s.conceptApprovedAt);
+  const todoCount = down.length + overdue.length + followUps.length + toPublish.length;
   const maxStage = Math.max(...OPEN_STAGES.map((s) => stages[s]), 1);
 
   const expected = money.mrrCents;
@@ -110,7 +112,7 @@ export default async function OverviewPage() {
             <span className={styles.meta}>{todoCount === 0 ? "Alles gedaan" : `${todoCount} te doen`}</span>
           </div>
 
-          {todoCount + dueSoon.length === 0 ? (
+          {todoCount + dueSoon.length + awaitingClient.length === 0 ? (
             <Empty text="Niets dat op je wacht. Goed moment om nieuwe leads te benaderen.">
               <Link href="/leads" className="btn btn-sm">
                 Naar leads
@@ -150,6 +152,17 @@ export default async function OverviewPage() {
                   </div>
                 </li>
               ))}
+              {toPublish.map((s) => (
+                <li key={`publish-${s.id}`}>
+                  <span className={styles.todoIcon} aria-hidden="true">
+                    <GitBranch />
+                  </span>
+                  <Link href={`/sites/${s.id}/versies`} className={styles.todoMain}>
+                    <strong>{s.name}: klant is akkoord</strong>
+                    <small>Het concept kan live · {s.clientName}</small>
+                  </Link>
+                </li>
+              ))}
               {followUps.map((c) => (
                 <li key={`follow-${c.id}`}>
                   <span className={styles.todoIcon} aria-hidden="true">
@@ -164,6 +177,19 @@ export default async function OverviewPage() {
                   <div className={styles.todoTools}>
                     <ContactActions client={c} compact />
                   </div>
+                </li>
+              ))}
+              {awaitingClient.map((s) => (
+                <li key={`await-${s.id}`} data-tone="quiet">
+                  <span className={styles.todoIcon} aria-hidden="true">
+                    <GitBranch />
+                  </span>
+                  <Link href={`/sites/${s.id}/versies`} className={styles.todoMain}>
+                    <strong>{s.name}: wacht op akkoord</strong>
+                    <small>
+                      Concept verstuurd {formatRelative(s.conceptSentAt!)} · {s.clientName}
+                    </small>
+                  </Link>
                 </li>
               ))}
               {dueSoon.map((i) => (

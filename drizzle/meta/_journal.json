@@ -99,6 +99,13 @@
       "when": 1794956521337,
       "tag": "0013_graceful_jean_grey",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794957798445,
+      "tag": "0014_equal_thanos",
+      "breakpoints": true
     }
   ]
 }

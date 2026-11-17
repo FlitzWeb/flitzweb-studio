@@ -121,6 +121,14 @@ export const sites = pgTable(
     // What the report's per-day chart counts: a tracker's event key, or null for visitors.
     reportChartEvent: text("report_chart_event"),
 
+    // Versions: `main` on GitHub is the live site, `conceptBranch` is the version
+    // being worked on, which the host builds at `conceptUrl`. See features/versions.
+    repo: text(), // "FlitzWeb/Hakiki-Doner"
+    conceptBranch: text("concept_branch").notNull().default("concept"),
+    conceptUrl: text("concept_url"),
+    conceptSentAt: timestamp("concept_sent_at", { withTimezone: true }),
+    conceptApprovedAt: timestamp("concept_approved_at", { withTimezone: true }),
+
     createdAt: createdAt(),
   },
   (t) => [index("sites_client_idx").on(t.clientId)],

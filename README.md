@@ -95,6 +95,12 @@ The schema is ready for it: `payments` and `subscription_charges` have `provider
 - A site's **Maandrapport** tab is the monthly update for the client: a 1080 × 1350 picture rendered by `/api/report-image/[siteId]` (`next/og`, login required) that leads with results, plus a short message to send with it (`features/summary/`). On a phone, "Deel afbeelding" passes the picture to WhatsApp through the share sheet.
 - Events, Bezoekers, Rapporten and Live are marked `hidden` in `features/site-tabs/registry.ts`: out of the tab bar, still reachable from the bottom of the Stats tab.
 
+## How versions work
+
+- For each client site, `main` on GitHub is the live site and a second branch (default `concept`) is the version being worked on. The host (Vercel or Cloudflare Pages) builds that branch at its own preview address. The Studio never talks to the host: per site it stores the repo, the concept branch and the concept address (`sites.repo`, `concept_branch`, `concept_url`; set them under Bewerken → Versies).
+- A site's **Versies** tab shows live and concept side by side, lists what the concept has that live doesn't (GitHub compare), and has the link to copy or send to the client. "Klant is akkoord" records the yes; both states show up under Vandaag.
+- **Zet live** merges the concept branch into `main` through the GitHub API (`lib/github.ts`), after which the host deploys. It needs `GITHUB_TOKEN`; so does comparing a private repo. Without the token the tab still shows both versions and the link.
+
 ## Stats (Umami-style analytics)
 
 The **Stats** tab of a site works like [Umami](https://umami.is): visitors, visits, views, bounce rate and visit duration (with the change vs the previous period), a chart of views and visitors, and breakdowns by page (plus entry and exit pages), referrer, channel (search, social, email, paid ads, AI assistants, direct, …), UTM tag, browser, OS, device, screen, country, region, city and language. The **Live** tab shows the last 30 minutes (visitors, a per-minute chart and an activity feed) and refreshes every 5 seconds. The **Events** tab lists every custom event with its count, visitors and conversion, and each event's properties with their most common values. The **Bezoekers** tab lists recent (anonymous) visitors; click one for their timeline per visit.
