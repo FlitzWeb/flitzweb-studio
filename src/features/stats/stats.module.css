@@ -596,3 +596,19 @@
   background: var(--surface-2);
   border-radius: var(--radius-sm);
 }
+
+.moreLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: var(--space-2) 0 0;
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+.moreLinks a {
+  color: var(--brand-ink);
+  text-decoration: none;
+}
+.moreLinks a:hover {
+  text-decoration: underline;
+}

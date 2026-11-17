@@ -99,6 +99,21 @@ export async function StatsTab({ site, searchParams }: TabProps) {
         .map((m) => (
           <MetricCard key={m.key} metric={m} siteId={site.id} />
         ))}
+
+      {/* These tabs are hidden from the tab bar (see registry.ts) but still work. */}
+      <p className={styles.moreLinks}>
+        Meer analyse:
+        {[
+          ["events", "Events"],
+          ["bezoekers", "Bezoekers"],
+          ["rapporten", "Rapporten"],
+          ["live", "Live"],
+        ].map(([slug, label]) => (
+          <Link key={slug} href={`/sites/${site.id}/${slug}`}>
+            {label}
+          </Link>
+        ))}
+      </p>
     </div>
   );
 }

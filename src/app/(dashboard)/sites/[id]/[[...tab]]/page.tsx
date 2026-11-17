@@ -23,7 +23,8 @@ async function load(params: Props["params"]) {
   const tabs = tabsFor(site);
   const active = tabs.find((t) => t.slug === (tab[0] ?? ""));
   if (!active) notFound();
-  return { site, tabs, active };
+  // A hidden tab opened by URL still gets its place in the bar while you are on it.
+  return { site, tabs: tabs.filter((t) => !t.hidden || t === active), active };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

@@ -25,6 +25,11 @@ export type SiteTab = {
   component: ComponentType<TabProps>;
   /** Optional: hide the tab for some sites. */
   visible?: (site: SiteWithClient) => boolean;
+  /**
+   * Left out of the tab bar, but the page still works at its URL
+   * (/sites/12/<slug>). Remove `hidden` to bring the tab back.
+   */
+  hidden?: boolean;
 };
 
 export const siteTabs: SiteTab[] = [
@@ -38,12 +43,13 @@ export const siteTabs: SiteTab[] = [
     visible: (site) => site.client.billingType === "paying",
   },
   { slug: "stats", label: "Stats", component: StatsTab },
-  { slug: "events", label: "Events", component: EventsTab },
-  { slug: "bezoekers", label: "Bezoekers", component: VisitorsTab },
-  { slug: "rapporten", label: "Rapporten", component: ReportsTab },
-  { slug: "live", label: "Live", component: LiveTab },
+  { slug: "events", label: "Events", component: EventsTab, hidden: true },
+  { slug: "bezoekers", label: "Bezoekers", component: VisitorsTab, hidden: true },
+  { slug: "rapporten", label: "Rapporten", component: ReportsTab, hidden: true },
+  { slug: "live", label: "Live", component: LiveTab, hidden: true },
   { slug: "tracking", label: "Tracking", component: TrackingTab },
 ];
 
+/** Every tab that exists for this site, including hidden ones (for routing). */
 export const tabsFor = (site: SiteWithClient) =>
   siteTabs.filter((t) => !t.visible || t.visible(site));
