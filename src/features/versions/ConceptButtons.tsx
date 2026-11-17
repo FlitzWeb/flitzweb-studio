@@ -2,7 +2,7 @@
 
 import { Check, Rocket, Send, Undo2 } from "lucide-react";
 import { useState, useTransition } from "react";
-import { markConceptSent, publishConcept, setConceptApproved } from "./actions";
+import { markConceptSent, moveToConcept, publishConcept, setConceptApproved } from "./actions";
 import styles from "./versions.module.css";
 
 /** Opens WhatsApp or mail with the concept link, and remembers that it was sent. */
@@ -91,5 +91,29 @@ export function PublishConcept({ siteId, siteName, count }: { siteId: number; si
         </button>
       </div>
     </div>
+  );
+}
+
+/** Merges a loose branch into the concept, so its changes get the concept link. */
+export function MoveToConcept({ siteId, branch }: { siteId: number; branch: string }) {
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  return (
+    <>
+      <button
+        type="button"
+        className="btn btn-sm"
+        disabled={pending}
+        onClick={() =>
+          startTransition(async () => {
+            const result = await moveToConcept(siteId, branch);
+            setError(result.error ?? null);
+          })
+        }
+      >
+        {pending ? "Bezig…" : "Zet op concept"}
+      </button>
+      {error && <span className="field-error">{error}</span>}
+    </>
   );
 }

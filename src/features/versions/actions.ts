@@ -56,3 +56,29 @@ export async function publishConcept(siteId: number): Promise<{ error?: string; 
   revalidatePath("/", "layout");
   return { done: true };
 }
+
+/**
+ * Brings another branch's changes onto the concept branch (a merge on GitHub),
+ * so work pushed under its own branch name shows up as the concept.
+ */
+export async function moveToConcept(siteId: number, branch: string): Promise<{ error?: string; done?: boolean }> {
+  await requireSession();
+  if (!/^[\w./-]+$/.test(branch)) return { error: "Onbekende branch." };
+  const site = await db.query.sites.findFirst({ where: eq(sites.id, siteId) });
+  if (!site?.repo) return { error: "Vul eerst de GitHub-repo in bij Bewerken." };
+  if (branch === LIVE_BRANCH || branch === site.conceptBranch) return { error: "Die branch is al live of al het concept." };
+
+  const result = await mergeBranch(site.repo, site.conceptBranch, branch, `Zet ${branch} op ${site.conceptBranch}`);
+  if (!result.ok) {
+    return {
+      error:
+        result.reason === "conflict"
+          ? `“${branch}” botst met wat al op het concept staat. Los dat op in de code.`
+          : publishErrors[result.reason],
+    };
+  }
+  // The concept changed, so an earlier "sent" or "approved" no longer covers it.
+  await db.update(sites).set({ conceptSentAt: null, conceptApprovedAt: null }).where(eq(sites.id, siteId));
+  revalidatePath("/", "layout");
+  return { done: true };
+}

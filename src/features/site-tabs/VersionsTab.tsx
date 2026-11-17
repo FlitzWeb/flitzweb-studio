@@ -2,10 +2,10 @@ import { ExternalLink, Pencil } from "lucide-react";
 import Link from "next/link";
 import { CopyButton } from "@/components/CopyButton";
 import { messageLink } from "@/features/clients/messageLink";
-import { ApproveConcept, MarkSent, PublishConcept, SendConcept } from "@/features/versions/ConceptButtons";
+import { ApproveConcept, MarkSent, MoveToConcept, PublishConcept, SendConcept } from "@/features/versions/ConceptButtons";
 import styles from "@/features/versions/versions.module.css";
 import { displayHost, formatDate, formatRelative } from "@/lib/format";
-import { compareBranches, hasGithubToken, type Comparison } from "@/lib/github";
+import { compareBranches, hasGithubToken, listBranches, type Comparison } from "@/lib/github";
 import type { TabProps } from "./registry";
 import tabStyles from "./tabs.module.css";
 
@@ -39,8 +39,12 @@ export async function VersionsTab({ site }: TabProps) {
     );
   }
 
-  const diff: Comparison | null = site.repo ? await compareBranches(site.repo, "main", site.conceptBranch) : null;
-  const ahead = diff?.ok ? diff.ahead : null;
+  const [diff, loose] = await Promise.all([
+    site.repo ? compareBranches(site.repo, "main", site.conceptBranch) : (null as Comparison | null),
+    site.repo ? looseBranches(site.repo, site.conceptBranch) : [],
+  ]);
+  // Count what a client would call a change (merge commits are left out of the list).
+  const ahead = diff?.ok ? (diff.ahead > 0 ? Math.max(diff.commits.length, 1) : 0) : null;
   const hasChanges = ahead == null ? Boolean(site.conceptUrl) : ahead > 0;
   const firstName = site.client.contactPerson?.trim().split(/\s+/)[0];
   const message = site.conceptUrl
@@ -116,7 +120,7 @@ export async function VersionsTab({ site }: TabProps) {
             {site.conceptUrl && !site.conceptSentAt && <MarkSent siteId={site.id} />}
             {(site.conceptSentAt || site.conceptApprovedAt) && <ApproveConcept siteId={site.id} approved={Boolean(site.conceptApprovedAt)} />}
             {site.repo && diff?.ok && diff.ahead > 0 && hasGithubToken() && (
-              <PublishConcept siteId={site.id} siteName={site.name} count={diff.ahead} />
+              <PublishConcept siteId={site.id} siteName={site.name} count={ahead ?? diff.ahead} />
             )}
           </div>
         )}
@@ -124,7 +128,55 @@ export async function VersionsTab({ site }: TabProps) {
           <p className={styles.note}>“Zet live” verschijnt hier zodra de Studio een GitHub-sleutel heeft (GITHUB_TOKEN). Tot die tijd merge je zelf naar main.</p>
         )}
       </section>
+
+      {loose.length > 0 && (
+        <section className={tabStyles.panel}>
+          <div className={styles.head}>
+            <h2>Wijzigingen op een andere branch</h2>
+          </div>
+          <p className={styles.note}>
+            De Studio toont alleen wat op “{site.conceptBranch}” staat, want daar hoort het vaste adres voor de klant bij. Dit werk staat op een
+            eigen branch en is dus nog niet te zien in het concept.
+          </p>
+          <ul className={styles.changes}>
+            {loose.map((b) => (
+              <li key={b.name}>
+                <span>
+                  <strong>{b.name}</strong> · {b.ahead} {b.ahead === 1 ? "wijziging" : "wijzigingen"}
+                  {b.last && `: ${b.last}`}
+                </span>
+                {hasGithubToken() && <MoveToConcept siteId={site.id} branch={b.name} />}
+              </li>
+            ))}
+          </ul>
+          {!hasGithubToken() && (
+            <p className={styles.note}>
+              Zet het op het concept door de branch in “{site.conceptBranch}” te mergen en te pushen (of push je werk direct naar “
+              {site.conceptBranch}”). Met een GitHub-sleutel verschijnt hier een knop die dat voor je doet.
+            </p>
+          )}
+        </section>
+      )}
     </div>
+  );
+}
+
+/** Other branches with work that is neither live nor on the concept branch yet. */
+async function looseBranches(repo: string, conceptBranch: string) {
+  const names = (await listBranches(repo)) ?? [];
+  const others = names.filter((n) => n !== "main" && n !== conceptBranch).slice(0, 8);
+  const compared = await Promise.all(
+    others.map(async (name) => {
+      // Two questions per branch: does it have anything the concept lacks, and what is new compared with live?
+      const [vsConcept, vsLive] = await Promise.all([compareBranches(repo, conceptBranch, name), compareBranches(repo, "main", name)]);
+      return { name, vsConcept, vsLive };
+    }),
+  );
+  return compared.flatMap(({ name, vsConcept, vsLive }) =>
+    // Stale branches (nothing new for the concept, or already live) stay out of sight.
+    vsConcept.ok && vsConcept.ahead > 0 && vsLive.ok && vsLive.commits.length > 0
+      ? [{ name, ahead: vsLive.commits.length, last: vsLive.commits[0]?.message ?? null }]
+      : [],
   );
 }
 

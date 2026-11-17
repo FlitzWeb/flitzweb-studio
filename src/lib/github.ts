@@ -45,20 +45,38 @@ export async function compareBranches(repo: string, base: string, head: string):
     const data = (await res.json()) as {
       ahead_by: number;
       behind_by: number;
-      commits: { sha: string; commit: { message: string; author: { date?: string } | null } }[];
+      commits: { sha: string; parents?: unknown[]; commit: { message: string; author: { date?: string } | null } }[];
       files?: { filename: string }[];
     };
     return {
       ok: true,
       ahead: data.ahead_by,
       behind: data.behind_by,
+      // Merge commits only join branches; they are not a change the client would recognise.
       commits: data.commits
+        .filter((c) => (c.parents?.length ?? 1) < 2)
         .map((c) => ({ sha: c.sha, message: c.commit.message.split("\n")[0], date: c.commit.author?.date ?? null }))
         .reverse(),
       files: (data.files ?? []).map((f) => f.filename),
     };
   } catch {
     return { ok: false, reason: "error" };
+  }
+}
+
+/** Branch names of a repo (first 50), or null when GitHub can't be read. */
+export async function listBranches(repo: string): Promise<string[] | null> {
+  if (!VALID_REPO.test(repo)) return null;
+  try {
+    const res = await fetch(`${API}/repos/${repo}/branches?per_page=50`, {
+      headers: headers(),
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return null;
+    return ((await res.json()) as { name: string }[]).map((b) => b.name);
+  } catch {
+    return null;
   }
 }
 
