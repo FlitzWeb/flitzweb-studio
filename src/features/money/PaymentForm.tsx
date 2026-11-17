@@ -60,6 +60,15 @@ export function PaymentForm({
           <Field {...f} name="issueDate" label="Factuurdatum" type="date" initial={payment?.issueDate ?? defaults.issueDate} />
           <Field {...f} name="dueDate" label="Vervaldatum" type="date" initial={payment?.dueDate ?? defaults.dueDate} />
         </div>
+        <Field
+          {...f}
+          name="paymentUrl"
+          label="Betaallink (optioneel)"
+          inputMode="url"
+          initial={payment?.paymentUrl}
+          placeholder="https://tikkie.me/pay/…"
+          hint="Tikkie of betaalverzoek van je bank. Komt in de lijst en in de herinnering te staan."
+        />
         <Field {...f} name="paidDate" label="Betaald op" type="date" initial={payment?.paidDate} hint="Leeg = nog niet betaald" />
       </section>
 

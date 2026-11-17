@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { optionalDate, requiredText } from "@/lib/forms";
+import { optionalDate, optionalUrl, requiredText } from "@/lib/forms";
 import { parseEuro } from "./status";
 
 const euro = z
@@ -28,6 +28,7 @@ export const paymentSchema = z
     issueDate: requiredDate,
     dueDate: requiredDate,
     paidDate: optionalDate,
+    paymentUrl: optionalUrl,
   })
   .refine((p) => p.dueDate >= p.issueDate, {
     path: ["dueDate"],
