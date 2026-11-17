@@ -85,6 +85,16 @@ The schema is ready for it: `payments` and `subscription_charges` have `provider
 2. A "Betaallink maken" action that creates a Mollie payment for an invoice and stores its id + checkout URL (`MoneyList` already shows a link when `paymentUrl` is set).
 3. A public `POST /api/mollie/webhook` (exclude it in `src/proxy.ts`) that fetches the payment from Mollie and, when it's paid, sets `paid_date` and `provider = 'mollie'` — the same thing `setPaid()` in `features/money/actions.ts` does by hand.
 
+## How leads work
+
+- A lead is a row in `clients` with a `stage` (`lead`, `contacted`, `replied`, `meeting`, `client`, `lost`). Existing clients are `client`. Moving a lead to **Klant** is just a stage change, so contact details, notes and the contact log carry over.
+- **Leads** (`/leads`) lists everyone who is not a client yet, due follow-ups first. `/leads/importeren` takes cells pasted from the leads sheet (columns: Bedrijfsnaam, Branche, Locatie, Contactpersoon, Telefoonnummer, Email, Website status, Gevonden door, Status, Laatste contact, Notities); names that already exist are skipped (`features/clients/importLeads.ts`).
+- Each lead and client has a **follow-up date** and a **contact log** (`contact_log`). Logging the first contact moves a fresh lead to Benaderd.
+- The home page's **Vandaag** list shows sites that are down, late payments, follow-ups that are due and payments expected within a week.
+- Late invoices and charges get a **Herinnering** button (opens WhatsApp or mail with the text filled in; nothing is sent by the Studio itself), and the cron job emails you once per item when it passes its due date (`features/money/overdueAlerts.ts`).
+- A site's **Maandrapport** tab is the monthly update for the client (`features/summary/`).
+- Events, Bezoekers, Rapporten and Live are marked `hidden` in `features/site-tabs/registry.ts`: out of the tab bar, still reachable from the bottom of the Stats tab.
+
 ## Stats (Umami-style analytics)
 
 The **Stats** tab of a site works like [Umami](https://umami.is): visitors, visits, views, bounce rate and visit duration (with the change vs the previous period), a chart of views and visitors, and breakdowns by page (plus entry and exit pages), referrer, channel (search, social, email, paid ads, AI assistants, direct, …), UTM tag, browser, OS, device, screen, country, region, city and language. The **Live** tab shows the last 30 minutes (visitors, a per-minute chart and an activity feed) and refreshes every 5 seconds. The **Events** tab lists every custom event with its count, visitors and conversion, and each event's properties with their most common values. The **Bezoekers** tab lists recent (anonymous) visitors; click one for their timeline per visit.
