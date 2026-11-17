@@ -1,6 +1,6 @@
 import "server-only";
 import { and, eq, gte, lt, sql } from "drizzle-orm";
-import { checks, db, events, type Tracker } from "@/db";
+import { checks, db, events, reportNotes, type Tracker } from "@/db";
 import { addMonths, monthStart, todayISO } from "@/lib/dates";
 import { amsterdamMidnight, type Period } from "@/lib/analytics/periods";
 import { getBreakdowns, getPageviewSeries, getWebsiteStats } from "@/lib/analytics/queries";
@@ -13,6 +13,17 @@ export function summaryMonth(param: unknown, today = todayISO()) {
   let month = isMonth(param) ? `${param}-01` : addMonths(thisMonth, -1);
   if (month > thisMonth) month = thisMonth;
   return { month, prev: addMonths(month, -1), next: month < thisMonth ? addMonths(month, 1) : null, isCurrent: month === thisMonth };
+}
+
+const LEGAL_PAGE = /^\/(privacy[a-z-]*|cookies?[a-z-]*|algemene-voorwaarden|voorwaarden|disclaimer|terms[a-z-]*)\/?$/i;
+
+/** The saved "what I did this month" line, or null. */
+export async function getReportNote(siteId: number, month: string) {
+  const [row] = await db
+    .select()
+    .from(reportNotes)
+    .where(and(eq(reportNotes.siteId, siteId), eq(reportNotes.month, month)));
+  return row ?? null;
 }
 
 /** Everything for one site's monthly summary: traffic vs the month before, goals, top pages, uptime. */
@@ -50,7 +61,8 @@ export async function getMonthSummary(siteId: number, trackers: Tracker[], month
     stats,
     /** Visitors per day of the month, for the small chart. */
     days: series.map((p) => ({ day: p.bucket, visitors: p.visitors })),
-    pages: breakdowns.pages.slice(0, 5),
+    // Legal pages say nothing about the business, and a "top pages" list of one is no list.
+    pages: breakdowns.pages.filter((p) => !LEGAL_PAGE.test(p.label)).slice(0, 5),
     referrers: breakdowns.referrers.slice(0, 5),
     goals: trackers.map((t) => {
       const g = byKey.get(t.eventKey);

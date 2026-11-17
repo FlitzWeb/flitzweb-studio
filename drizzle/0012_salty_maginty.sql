@@ -1,0 +1,1 @@
+ALTER TABLE "sites" ADD COLUMN "report_hidden" jsonb DEFAULT '[]'::jsonb NOT NULL;

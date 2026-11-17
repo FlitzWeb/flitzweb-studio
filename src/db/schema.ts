@@ -116,6 +116,9 @@ export const sites = pgTable(
     downSince: timestamp("down_since", { withTimezone: true }),
     sslAlertSent: boolean("ssl_alert_sent").notNull().default(false),
 
+    // Parts left off this site's monthly report picture; see features/summary/parts.ts.
+    reportHidden: jsonb("report_hidden").$type<string[]>().notNull().default([]),
+
     createdAt: createdAt(),
   },
   (t) => [index("sites_client_idx").on(t.clientId)],
@@ -254,6 +257,21 @@ export const reports = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index("reports_site_idx").on(t.siteId)],
+);
+
+/** The "what I did this month" line on a site's monthly report, one per site per month. */
+export const reportNotes = pgTable(
+  "report_notes",
+  {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    siteId: integer("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    month: date().notNull(), // first day of the month
+    done: text().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("report_notes_site_month_idx").on(t.siteId, t.month)],
 );
 
 // ---------------------------------------------------------------------------

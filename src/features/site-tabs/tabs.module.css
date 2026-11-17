@@ -188,3 +188,36 @@
   gap: var(--space-2);
   margin-top: var(--space-4);
 }
+.parts {
+  display: grid;
+  gap: 2px;
+}
+.part {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: 8px 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.part:hover {
+  background: var(--surface-2);
+}
+.part input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--brand);
+}
+.part span {
+  display: grid;
+  gap: 1px;
+  font-size: 0.875rem;
+}
+.part strong {
+  font-weight: 600;
+}
+.part small {
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+}

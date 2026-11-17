@@ -1,5 +1,6 @@
 import { formatMonth } from "@/lib/dates";
 import { formatEuro, formatPct } from "@/lib/format";
+import type { ReportPart } from "./parts";
 import type { MonthSummary } from "./queries";
 
 const nl = (n: number) => n.toLocaleString("nl-NL");
@@ -21,20 +22,29 @@ export type Highlight = { label: string; value: string; note?: string | null };
  * The (at most four) numbers the report leads with. Results first: what the
  * site brought in (tracker goals), then visitors, then the supporting figures.
  */
-export function highlights(s: MonthSummary): Highlight[] {
-  const list: Highlight[] = [
-    ...s.goals
-      .filter((g) => g.value > 0)
-      .slice(0, 2)
-      .map((g) => ({ label: g.name, value: goalValue(g), note: "via de website" })),
-    {
+export function highlights(s: MonthSummary, hidden: ReadonlySet<ReportPart> = new Set()): Highlight[] {
+  const list: Highlight[] = [];
+  if (!hidden.has("goals")) {
+    list.push(
+      ...s.goals
+        .filter((g) => g.value > 0)
+        .slice(0, 2)
+        .map((g) => ({ label: g.name, value: goalValue(g), note: "via de website" })),
+    );
+  }
+  if (!hidden.has("visitors")) {
+    list.push({
       label: "Bezoekers",
       value: nl(s.stats.current.visitors),
       note: changeText(s.stats.current.visitors, s.stats.previous.visitors),
-    },
-    { label: "Pagina's bekeken", value: nl(s.stats.current.views), note: changeText(s.stats.current.views, s.stats.previous.views) },
-  ];
-  if (s.uptimePct != null) list.push({ label: "Bereikbaar", value: `${formatPct(s.uptimePct)}%`, note: "van de tijd online" });
+    });
+  }
+  if (!hidden.has("views")) {
+    list.push({ label: "Pagina's bekeken", value: nl(s.stats.current.views), note: changeText(s.stats.current.views, s.stats.previous.views) });
+  }
+  if (!hidden.has("uptime") && s.uptimePct != null) {
+    list.push({ label: "Bereikbaar", value: `${formatPct(s.uptimePct)}%`, note: "van de tijd online" });
+  }
   return list.slice(0, 4);
 }
 
