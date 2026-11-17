@@ -11,18 +11,20 @@ import {
 } from "@/lib/format";
 import { hostingLabels } from "@/features/sites/schema";
 import type { SiteWithClient } from "@/lib/sites";
-import { getIncidents, recentChecks, uptimeBySite } from "@/lib/uptime/queries";
+import { getIncidents, latestCheck, recentChecks, uptimeBySite } from "@/lib/uptime/queries";
 import { SSL_WARN_DAYS } from "@/lib/uptime/run";
 import styles from "./tabs.module.css";
 
 export async function OverviewTab({ site }: { site: SiteWithClient }) {
-  const [last24h, up7, up30, incidents] = await Promise.all([
+  const [last24h, lastEver, up7, up30, incidents] = await Promise.all([
     recentChecks(site.id, 24),
+    latestCheck(site.id),
     uptimeBySite(7, site.id),
     uptimeBySite(30, site.id),
     getIncidents(site.id, 30),
   ]);
-  const last = last24h.at(-1);
+  // Older than a day still counts as "checked": the tiles below then show how stale it is.
+  const last = last24h.at(-1) ?? lastEver ?? undefined;
   const timed = last24h.filter((c) => c.responseMs != null);
   const avgMs = timed.length
     ? Math.round(timed.reduce((sum, c) => sum + c.responseMs!, 0) / timed.length)
@@ -49,7 +51,7 @@ export async function OverviewTab({ site }: { site: SiteWithClient }) {
 
         <div className={styles.tilesWrap}>
           <StatTiles>
-            <StatTile label="Nu" value={last?.responseMs} unit="ms" />
+            <StatTile label={last24h.length ? "Nu" : "Laatste check"} value={last?.responseMs} unit="ms" />
             <StatTile label="Gem. 24 u" value={avgMs} unit="ms" />
             <StatTile label="Uptime 7 d" value={pct(up7.get(site.id))} unit="%" />
             <StatTile label="Uptime 30 d" value={pct(up30.get(site.id))} unit="%" />

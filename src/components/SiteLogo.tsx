@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- proxied favicons, no optimisation needed */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./SiteLogo.module.css";
 
 /**
@@ -23,7 +23,14 @@ export function SiteLogo({
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
+  const img = useRef<HTMLImageElement>(null);
   const showImg = siteId != null && !failed;
+
+  // The image can fail before React is listening (server-rendered page):
+  // check once on mount so the letter still takes over.
+  useEffect(() => {
+    if (img.current?.complete && img.current.naturalWidth === 0) setFailed(true);
+  }, []);
 
   return (
     <span
@@ -33,7 +40,7 @@ export function SiteLogo({
       aria-hidden="true"
     >
       {showImg ? (
-        <img src={`/api/site-icon/${siteId}`} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} />
+        <img ref={img} src={`/api/site-icon/${siteId}`} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} />
       ) : (
         name.charAt(0)
       )}

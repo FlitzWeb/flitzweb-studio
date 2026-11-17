@@ -75,6 +75,12 @@ export function recentChecks(siteId: number, hours: number): Promise<Check[]> {
     .orderBy(asc(checks.checkedAt));
 }
 
+/** The most recent check for one site, however old. */
+export async function latestCheck(siteId: number): Promise<Check | null> {
+  const [row] = await db.select().from(checks).where(eq(checks.siteId, siteId)).orderBy(desc(checks.checkedAt)).limit(1);
+  return row ?? null;
+}
+
 export type Incident = { start: Date; end: Date | null; error: string | null };
 
 /** Groups consecutive failed checks into incidents, newest first. */

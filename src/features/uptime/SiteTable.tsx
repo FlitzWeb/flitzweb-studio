@@ -81,7 +81,7 @@ export function SiteTable({ sites }: { sites: SiteOverview[] }) {
                   {sslDays == null ? <span className={styles.na}>–</span> : sslDays < 0 ? "verlopen" : `${sslDays} d`}
                 </td>
                 <td data-label="Gecheckt" data-num className={styles.when}>
-                  {check ? formatRelative(check.checkedAt) : site.monitored ? "nog niet" : site.clientName}
+                  {!site.monitored ? <span className={styles.na}>–</span> : check ? formatRelative(check.checkedAt) : "nog niet"}
                 </td>
               </tr>
             );

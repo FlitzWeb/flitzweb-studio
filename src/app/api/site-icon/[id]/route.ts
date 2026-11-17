@@ -5,7 +5,8 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
 import { getSiteIcon } from "@/lib/siteIcon";
 
 // A site's own favicon/logo, fetched from the site and proxied. Login required.
-// 404 means "no icon found"; the UI then shows the first letter instead.
+// 204 (empty) means "no icon found"; the UI then shows the first letter instead.
+// Not a 404, so the browser console stays clean.
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const email = await verifySessionToken((await cookies()).get(SESSION_COOKIE)?.value);
   if (!email || email !== process.env.ADMIN_EMAIL?.trim().toLowerCase()) {
@@ -17,7 +18,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const [site] = await db.select({ url: sites.url }).from(sites).where(eq(sites.id, id));
   const icon = site && (await getSiteIcon(site.url));
   if (!icon) {
-    return new Response(null, { status: 404, headers: { "Cache-Control": "private, max-age=3600" } });
+    return new Response(null, { status: 204, headers: { "Cache-Control": "private, max-age=3600" } });
   }
 
   return new Response(icon.body, {

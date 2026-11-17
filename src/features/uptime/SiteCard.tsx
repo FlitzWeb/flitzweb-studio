@@ -56,7 +56,7 @@ export function SiteCard({ site }: { site: SiteOverview }) {
       )}
 
       <p className={styles.checked}>
-        {check ? `Gecheckt ${formatRelative(check.checkedAt)}` : site.monitored ? "Nog geen checks" : site.clientName}
+        {!site.monitored ? "Niet gemonitord" : check ? `Gecheckt ${formatRelative(check.checkedAt)}` : "Nog geen checks"}
       </p>
     </Link>
   );
