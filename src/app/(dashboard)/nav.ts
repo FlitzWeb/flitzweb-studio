@@ -1,8 +1,9 @@
-import { LayoutGrid, Receipt, Users, Wallet, type LucideIcon } from "lucide-react";
+import { LayoutGrid, Receipt, Target, Users, Wallet, type LucideIcon } from "lucide-react";
 
 // Main navigation. Add an entry here when a new section gets its own page.
 export const navItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/", label: "Overzicht", icon: LayoutGrid },
+  { href: "/leads", label: "Leads", icon: Target },
   { href: "/klanten", label: "Klanten", icon: Users },
   { href: "/geld", label: "Geld", icon: Wallet },
   { href: "/kosten", label: "Kosten", icon: Receipt },

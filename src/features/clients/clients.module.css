@@ -152,3 +152,163 @@
 .cardFacts {
   margin-top: var(--space-5);
 }
+
+/* ---------- Leads: stage chips, row tools, follow-up ---------- */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  font-weight: 550;
+  text-decoration: none;
+}
+.chip span {
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.chip:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+.chip[aria-current="page"] {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+.chip[aria-current="page"] span {
+  color: inherit;
+}
+
+.rowTools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-2);
+}
+@media (max-width: 619px) {
+  .row:has(.rowTools) {
+    flex-wrap: wrap;
+  }
+  .rowTools {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+.stageSelect {
+  width: auto;
+  min-width: 132px;
+  height: 36px;
+  padding-block: 0;
+  font-size: 0.8125rem;
+  font-weight: 550;
+}
+.stageSelect[data-stage="replied"],
+.stageSelect[data-stage="meeting"] {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+.stageSelect[data-stage="client"] {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.due {
+  font-weight: 550;
+  color: var(--ink-2);
+}
+.due[data-due] {
+  color: var(--danger);
+}
+.due[data-warn] {
+  color: var(--warn);
+}
+
+.pipeline {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+}
+@media (min-width: 620px) {
+  .pipeline {
+    grid-template-columns: minmax(150px, 220px) 1fr;
+  }
+}
+.pipeline > div {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+.pipeline .stageSelect {
+  width: 100%;
+  height: 40px;
+}
+
+.followUp {
+  display: grid;
+  gap: var(--space-2);
+}
+.followUpRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.followUpRow .input {
+  width: auto;
+}
+.quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.importArea {
+  min-height: 180px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+  white-space: pre;
+  overflow: auto;
+}
+.previewWrap {
+  overflow-x: auto;
+}
+.preview {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+.preview th,
+.preview td {
+  padding: 8px 10px;
+  border-top: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.preview th {
+  border-top: 0;
+  color: var(--ink-3);
+  font-weight: 550;
+}
+
+.stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}

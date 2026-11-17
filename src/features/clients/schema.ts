@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { optionalText, requiredText } from "@/lib/forms";
+import { optionalDate, optionalText, requiredText } from "@/lib/forms";
+import { STAGES } from "./stages";
 
 export const clientSchema = z.object({
   name: requiredText("Geef de klant een naam"),
@@ -18,6 +19,18 @@ export const clientSchema = z.object({
   address: optionalText,
   notes: optionalText,
   billingType: z.enum(["paying", "no_billing"]),
+  stage: z.enum(STAGES),
+  nextFollowUp: optionalDate,
+  industry: optionalText,
+  websiteStatus: optionalText,
+});
+
+export const contactSchema = z.object({
+  kind: z.enum(["whatsapp", "phone", "email", "meeting", "note"]),
+  body: optionalText,
+  occurredOn: z.iso.date({ message: "Kies een datum" }),
+  // "" = leave the follow-up date alone, "none" = clear it, a number = days from today.
+  followUp: z.enum(["", "none", "1", "3", "7", "14", "30"]),
 });
 
 export const channelLabels = {

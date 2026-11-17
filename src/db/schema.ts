@@ -31,6 +31,17 @@ export const contactChannel = pgEnum("contact_channel", [
   "email",
 ]);
 
+// Where a business is in the pipeline. Existing clients are "client";
+// everything before that is a lead you are still working on.
+export const clientStage = pgEnum("client_stage", [
+  "lead",
+  "contacted",
+  "replied",
+  "meeting",
+  "client",
+  "lost",
+]);
+
 export const clients = pgTable("clients", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: text().notNull(),
@@ -43,8 +54,31 @@ export const clients = pgTable("clients", {
   address: text(),
   notes: text(),
   billingType: billingType("billing_type").notNull().default("paying"),
+  stage: clientStage().notNull().default("client"),
+  // When to get in touch again (leads: follow up, clients: check in).
+  nextFollowUp: date("next_follow_up"),
+  industry: text(), // "Kapper", "Rijschool"
+  websiteStatus: text("website_status"), // "Geen website", "Outdated website", ...
   createdAt: createdAt(),
 });
+
+/** One line per contact moment with a lead or client. */
+export const contactKind = pgEnum("contact_kind", ["whatsapp", "phone", "email", "meeting", "note"]);
+
+export const contactLog = pgTable(
+  "contact_log",
+  {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    clientId: integer("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    kind: contactKind().notNull().default("note"),
+    body: text().notNull(),
+    occurredOn: date("occurred_on").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("contact_log_client_idx").on(t.clientId, t.occurredOn)],
+);
 
 // ---------------------------------------------------------------------------
 // Sites
@@ -247,7 +281,9 @@ export const payments = pgTable(
     paidDate: date("paid_date"),
     provider: paymentProvider().notNull().default("manual"),
     providerRef: text("provider_ref"), // e.g. Mollie payment id tr_xxx
-    paymentUrl: text("payment_url"), // e.g. Mollie checkout link
+    paymentUrl: text("payment_url"), // e.g. Mollie checkout link or Tikkie
+    // Set once the "this is overdue" email to yourself went out.
+    overdueAlertSent: boolean("overdue_alert_sent").notNull().default(false),
     createdAt: createdAt(),
   },
   (t) => [index("payments_client_idx").on(t.clientId)],
@@ -289,6 +325,7 @@ export const subscriptionCharges = pgTable(
     paidDate: date("paid_date"),
     provider: paymentProvider().notNull().default("manual"),
     providerRef: text("provider_ref"),
+    overdueAlertSent: boolean("overdue_alert_sent").notNull().default(false),
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex("charges_sub_period_idx").on(t.subscriptionId, t.period)],
@@ -344,6 +381,11 @@ export const clientsRelations = relations(clients, ({ many }) => ({
   sites: many(sites),
   payments: many(payments),
   subscriptions: many(subscriptions),
+  contactLog: many(contactLog),
+}));
+
+export const contactLogRelations = relations(contactLog, ({ one }) => ({
+  client: one(clients, { fields: [contactLog.clientId], references: [clients.id] }),
 }));
 
 export const paymentsRelations = relations(payments, ({ one }) => ({
@@ -400,3 +442,5 @@ export type Payment = typeof payments.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type SubscriptionCharge = typeof subscriptionCharges.$inferSelect;
 export type Cost = typeof costs.$inferSelect;
+export type ContactLogEntry = typeof contactLog.$inferSelect;
+export type ClientStage = (typeof clientStage.enumValues)[number];

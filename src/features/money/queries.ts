@@ -177,6 +177,6 @@ export function getPayingClientOptions() {
   return db
     .select({ id: clients.id, name: clients.name })
     .from(clients)
-    .where(paying)
+    .where(and(paying, eq(clients.stage, "client")))
     .orderBy(clients.name);
 }

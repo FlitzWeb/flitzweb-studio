@@ -6,8 +6,10 @@ import type { Client } from "@/db";
 import { Field } from "@/components/form/Field";
 import styles from "@/components/form/form.module.css";
 import { saveClient } from "./actions";
+import { STAGES, stageLabels, type Stage } from "./stages";
 
-export function ClientForm({ client }: { client?: Client }) {
+export function ClientForm({ client, defaultStage = "client" }: { client?: Client; defaultStage?: Stage }) {
+  const isLead = (client?.stage ?? defaultStage) !== "client";
   const [state, action, pending] = useActionState(saveClient.bind(null, client?.id), {});
   const f = { state };
 
@@ -15,7 +17,7 @@ export function ClientForm({ client }: { client?: Client }) {
     // `key` remounts the form after a failed submit so it shows the sent values.
     <form key={state.at} action={action} className={styles.form} noValidate>
       <section className={styles.section}>
-        <h2>Klant</h2>
+        <h2>{isLead ? "Lead" : "Klant"}</h2>
         <Field {...f} name="name" label="Naam" initial={client?.name} required placeholder="Hakiki Döner" />
         <div className={styles.row}>
           <Field {...f} name="businessName" label="Bedrijfsnaam" initial={client?.businessName} hint="Als die anders is dan de naam" />
@@ -30,6 +32,21 @@ export function ClientForm({ client }: { client?: Client }) {
               { value: "no_billing", label: "Geen facturatie (familie, pro bono)" },
             ]}
           />
+        </div>
+        <div className={styles.row}>
+          <Field
+            {...f}
+            as="select"
+            name="stage"
+            label="Fase"
+            initial={client?.stage ?? defaultStage}
+            options={STAGES.map((s) => ({ value: s, label: stageLabels[s] }))}
+          />
+          <Field {...f} name="nextFollowUp" label="Opvolgen op" type="date" initial={client?.nextFollowUp} hint="Leeg = geen herinnering" />
+        </div>
+        <div className={styles.row}>
+          <Field {...f} name="industry" label="Branche" initial={client?.industry} placeholder="Kapper" />
+          <Field {...f} name="websiteStatus" label="Website nu" initial={client?.websiteStatus} placeholder="Geen website" />
         </div>
       </section>
 
@@ -63,9 +80,9 @@ export function ClientForm({ client }: { client?: Client }) {
       <div className={styles.footer}>
         <div>
           <button className="btn btn-primary" type="submit" disabled={pending}>
-            {pending ? "Opslaan…" : client ? "Opslaan" : "Klant toevoegen"}
+            {pending ? "Opslaan…" : client ? "Opslaan" : isLead ? "Lead toevoegen" : "Klant toevoegen"}
           </button>
-          <Link href={client ? `/klanten/${client.id}` : "/klanten"} className="btn">
+          <Link href={client ? `/klanten/${client.id}` : isLead ? "/leads" : "/klanten"} className="btn">
             Annuleren
           </Link>
         </div>

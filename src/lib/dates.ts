@@ -41,3 +41,20 @@ const monthFmt = new Intl.DateTimeFormat("nl-NL", {
 
 /** "2026-10-01" → "oktober 2026" */
 export const formatMonth = (iso: string) => monthFmt.format(toDate(iso));
+
+/** Whole days from `from` to `to` (negative when `to` is earlier). */
+export const diffDays = (from: string, to: string) =>
+  Math.round((toDate(to).getTime() - toDate(from).getTime()) / 86400000);
+
+const shortFmt = new Intl.DateTimeFormat("nl-NL", { timeZone: "UTC", day: "numeric", month: "short" });
+
+/** A date relative to today: "vandaag", "morgen", "3 dagen te laat", "24 nov". */
+export function formatDue(iso: string, today = todayISO()) {
+  const d = diffDays(today, iso);
+  if (d === 0) return "vandaag";
+  if (d === 1) return "morgen";
+  if (d === -1) return "gisteren";
+  if (d < 0) return `${-d} dagen te laat`;
+  if (d < 7) return `over ${d} dagen`;
+  return shortFmt.format(toDate(iso));
+}

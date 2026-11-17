@@ -3,7 +3,10 @@ import { Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ContactCard } from "@/features/clients/ContactCard";
+import { PipelineCard } from "@/features/clients/PipelineCard";
 import { getClient } from "@/features/clients/queries";
+import { stageLabels, stageTone } from "@/features/clients/stages";
+import { todayISO } from "@/lib/dates";
 import { ClientMoney } from "@/features/money/ClientMoney";
 import moneyStyles from "@/features/money/money.module.css";
 import { billingLabels } from "@/features/clients/schema";
@@ -27,12 +30,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ClientPage({ params }: Props) {
   const client = await load(params);
-  const sites = (await getSiteOverviews()).filter((s) => s.clientId === client.id);
+  const sites = (await getSiteOverviews()).filter(
+    (s) => s.clientId === client.id,
+  );
+  const isClient = client.stage === "client";
 
   return (
     <>
-      <Link href="/klanten" className="back-link">
-        ← Klanten
+      <Link href={isClient ? "/klanten" : "/leads"} className="back-link">
+        ← {isClient ? "Klanten" : "Leads"}
       </Link>
       <header className="page-head">
         <div>
@@ -41,9 +47,19 @@ export default async function ClientPage({ params }: Props) {
             {client.businessName && client.businessName !== client.name && (
               <span>{client.businessName}</span>
             )}
-            <span className="badge" data-tone={client.billingType === "paying" ? "plain" : undefined}>
-              {billingLabels[client.billingType]}
+            <span className="badge" data-tone={stageTone[client.stage]}>
+              {stageLabels[client.stage]}
             </span>
+            {isClient && (
+              <span
+                className="badge"
+                data-tone={
+                  client.billingType === "paying" ? "plain" : undefined
+                }
+              >
+                {billingLabels[client.billingType]}
+              </span>
+            )}
           </p>
         </div>
         <Link href={`/klanten/${client.id}/bewerken`} className="btn">
@@ -52,28 +68,38 @@ export default async function ClientPage({ params }: Props) {
         </Link>
       </header>
 
-      <ContactCard client={client} />
-
-      <div className={styles.sectionHead}>
-        <h2>Sites</h2>
-        <Link href={`/sites/nieuw?klant=${client.id}`} className="btn btn-sm">
-          <Plus aria-hidden="true" />
-          Site toevoegen
-        </Link>
+      <div className={styles.stack}>
+        <PipelineCard client={client} today={todayISO()} />
+        <ContactCard client={client} />
       </div>
-      {sites.length === 0 ? (
-        <p className={styles.muted}>Nog geen sites voor deze klant.</p>
-      ) : (
-        <div className={overview.siteGrid}>
-          {sites.map((site) => (
-            <SiteCard key={site.id} site={site} />
-          ))}
-        </div>
+
+      {(isClient || sites.length > 0) && (
+        <>
+          <div className={styles.sectionHead}>
+            <h2>Sites</h2>
+            <Link
+              href={`/sites/nieuw?klant=${client.id}`}
+              className="btn btn-sm"
+            >
+              <Plus aria-hidden="true" />
+              Site toevoegen
+            </Link>
+          </div>
+          {sites.length === 0 ? (
+            <p className={styles.muted}>Nog geen sites voor deze klant.</p>
+          ) : (
+            <div className={overview.siteGrid}>
+              {sites.map((site) => (
+                <SiteCard key={site.id} site={site} />
+              ))}
+            </div>
+          )}
+
+          <div className={moneyStyles.section}>
+            <ClientMoney client={client} returnTo={`/klanten/${client.id}`} />
+          </div>
+        </>
       )}
-
-      <div className={moneyStyles.section}>
-        <ClientMoney client={client} returnTo={`/klanten/${client.id}`} />
-      </div>
     </>
   );
 }
