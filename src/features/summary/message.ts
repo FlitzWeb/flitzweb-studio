@@ -29,7 +29,7 @@ export function highlights(s: MonthSummary, hidden: ReadonlySet<ReportPart> = ne
       ...s.goals
         .filter((g) => g.value > 0)
         .slice(0, 2)
-        .map((g) => ({ label: g.name, value: goalValue(g), note: "via de website" })),
+        .map((g) => ({ label: g.name, value: goalValue(g), note: changeText(g.value, g.previous) ?? "via de website" })),
     );
   }
   if (!hidden.has("visitors")) {

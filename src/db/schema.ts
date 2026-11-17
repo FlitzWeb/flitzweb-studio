@@ -118,6 +118,8 @@ export const sites = pgTable(
 
     // Parts left off this site's monthly report picture; see features/summary/parts.ts.
     reportHidden: jsonb("report_hidden").$type<string[]>().notNull().default([]),
+    // What the report's per-day chart counts: a tracker's event key, or null for visitors.
+    reportChartEvent: text("report_chart_event"),
 
     createdAt: createdAt(),
   },

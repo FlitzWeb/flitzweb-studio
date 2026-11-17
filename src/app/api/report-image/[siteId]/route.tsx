@@ -33,6 +33,13 @@ const MARK = `data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="36 166 276 202"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3B82F6"/><stop offset="1" stop-color="#06B6D4"/></linearGradient></defs><g transform="rotate(-14 228 256)"><rect x="64" y="196" width="64" height="22" rx="11" fill="url(#g)" opacity="0.3"/><rect x="52" y="250" width="94" height="22" rx="11" fill="url(#g)" opacity="0.55"/><rect x="70" y="304" width="72" height="22" rx="11" fill="url(#g)" opacity="0.78"/><path d="M156,152 L156,344 L204,296 L240,360 L276,344 L240,284 L300,284 Z" fill="url(#g)"/></g></svg>',
 )}`;
 
+const dayFmt = new Intl.DateTimeFormat("nl-NL", {
+  timeZone: "UTC",
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export async function GET(
@@ -52,7 +59,7 @@ export async function GET(
   const url = new URL(request.url);
   const { month } = summaryMonth(url.searchParams.get("maand"));
   const [summary, note] = await Promise.all([
-    getMonthSummary(site.id, site.trackers, month),
+    getMonthSummary(site.id, site.trackers, month, site.reportChartEvent),
     getReportNote(site.id, month),
   ]);
   const done = note?.done ?? "";
@@ -61,7 +68,15 @@ export async function GET(
   const showPages = !hidden.has("pages") && summary.pages.length > 1;
   const showSources = !hidden.has("sources");
   const tiles = highlights(summary, hidden);
-  const maxDay = Math.max(...summary.days.map((d) => d.visitors), 1);
+  const { chart } = summary;
+  const maxDay = Math.max(...chart.days.map((d) => d.value), 1);
+  const peak = chart.days.find((d) => d.value === maxDay && d.value > 0);
+  // Small numbers fit above every bar; with big ones only the busiest day gets its number.
+  const labelAll = maxDay < 100 && !chart.isMoney;
+  const fmtValue = (v: number) =>
+    chart.isMoney
+      ? `€ ${Math.round(v).toLocaleString("nl-NL")}`
+      : v.toLocaleString("nl-NL");
   const monthLabel = capitalize(formatMonth(month));
 
   const image = new ImageResponse(
@@ -133,7 +148,7 @@ export async function GET(
             </div>
             <div
               style={{
-                fontSize: 56,
+                fontSize: 52,
                 fontWeight: 700,
                 letterSpacing: -2,
                 lineHeight: 1.1,
@@ -153,7 +168,7 @@ export async function GET(
               display: "flex",
               flexWrap: "wrap",
               gap: 20,
-              marginTop: 32,
+              marginTop: 26,
             }}
           >
             {tiles.map((t, i) => (
@@ -167,7 +182,7 @@ export async function GET(
                   display: "flex",
                   flexDirection: "column",
                   borderRadius: 24,
-                  padding: "20px 28px",
+                  padding: "16px 26px",
                   background: i === 0 ? BRAND : "#f6f7f9",
                   color: i === 0 ? "#fff" : INK,
                 }}
@@ -183,7 +198,7 @@ export async function GET(
                 </div>
                 <div
                   style={{
-                    fontSize: 66,
+                    fontSize: 58,
                     fontWeight: 700,
                     letterSpacing: -2,
                     lineHeight: 1.15,
@@ -204,52 +219,124 @@ export async function GET(
             ))}
           </div>
 
-          {/* Visitors per day */}
+          {/* One bar per day, with the day of the month under it */}
           {!hidden.has("chart") && (
             <div
               style={{
                 display: "flex",
                 flexDirection: "column",
-                marginTop: 30,
+                marginTop: 24,
               }}
             >
-              <div style={{ fontSize: 24, fontWeight: 600, color: INK_2 }}>
-                Bezoekers per dag
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                }}
+              >
+                <div style={{ fontSize: 24, fontWeight: 600, color: INK_2 }}>
+                  {`${chart.label} per dag`}
+                </div>
+                {peak && (
+                  <div style={{ display: "flex", fontSize: 21, color: INK_3 }}>
+                    {`Beste dag: ${dayFmt.format(new Date(`${peak.day}T12:00:00Z`))} (${fmtValue(peak.value)})`}
+                  </div>
+                )}
               </div>
               <div
                 style={{
                   display: "flex",
                   alignItems: "flex-end",
-                  gap: 6,
-                  height: 96,
-                  marginTop: 12,
+                  gap: 4,
+                  height: 112,
+                  marginTop: 10,
                   borderBottom: `2px solid ${LINE}`,
                 }}
               >
-                {summary.days.map((d) => (
-                  <div
-                    key={d.day}
-                    style={{
-                      flex: 1,
-                      height: Math.max(
-                        Math.round((d.visitors / maxDay) * 92),
-                        4,
-                      ),
-                      borderRadius: "6px 6px 0 0",
-                      background:
-                        d.visitors === maxDay && d.visitors > 0
-                          ? BRAND
-                          : "#c9dafc",
-                    }}
-                  />
-                ))}
+                {chart.days.map((d) => {
+                  const isPeak = d === peak;
+                  return (
+                    <div
+                      key={d.day}
+                      style={{
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      {d.value > 0 && (labelAll || isPeak) && (
+                        <div
+                          style={{
+                            display: "flex",
+                            fontSize: 15,
+                            fontWeight: 600,
+                            color: isPeak ? BRAND : INK_3,
+                            marginBottom: 2,
+                          }}
+                        >
+                          {fmtValue(d.value)}
+                        </div>
+                      )}
+                      <div
+                        style={{
+                          width: "100%",
+                          height:
+                            d.value > 0
+                              ? Math.max(Math.round((d.value / maxDay) * 88), 4)
+                              : 2,
+                          borderRadius: "5px 5px 0 0",
+                          background: isPeak
+                            ? BRAND
+                            : d.value > 0
+                              ? "#c9dafc"
+                              : LINE,
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ display: "flex", gap: 4, marginTop: 5 }}>
+                {chart.days.map((d) => {
+                  const weekend = [0, 6].includes(
+                    new Date(`${d.day}T12:00:00Z`).getUTCDay(),
+                  );
+                  return (
+                    <div
+                      key={d.day}
+                      style={{
+                        flex: 1,
+                        display: "flex",
+                        justifyContent: "center",
+                        fontSize: 15,
+                        fontWeight: weekend ? 700 : 400,
+                        color: weekend ? INK : INK_3,
+                      }}
+                    >
+                      {Number(d.day.slice(8))}
+                    </div>
+                  );
+                })}
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: 17,
+                  color: INK_3,
+                  marginTop: 4,
+                }}
+              >
+                Dag van de maand · vetgedrukt = weekend
               </div>
             </div>
           )}
 
           {/* Top pages and sources */}
           {(showPages || showSources) && (
-            <div style={{ display: "flex", gap: 40, marginTop: 28 }}>
+            <div style={{ display: "flex", gap: 40, marginTop: 22 }}>
               {showPages && (
                 <TopList title="Meest bekeken" rows={summary.pages} />
               )}
@@ -267,10 +354,10 @@ export async function GET(
               style={{
                 display: "flex",
                 flexDirection: "column",
-                marginTop: 26,
+                marginTop: 20,
                 borderRadius: 20,
                 background: "#eaf1fe",
-                padding: "18px 26px",
+                padding: "14px 24px",
               }}
             >
               <div style={{ fontSize: 22, fontWeight: 600, color: BRAND }}>

@@ -17,14 +17,14 @@ import styles from "./tabs.module.css";
 /** One month as a picture to send the client, with the numbers it is built from. */
 export async function SummaryTab({ site, searchParams }: TabProps) {
   const { month, prev, next, isCurrent } = summaryMonth(searchParams.maand);
-  const [summary, note] = await Promise.all([getMonthSummary(site.id, site.trackers, month), getReportNote(site.id, month)]);
+  const [summary, note] = await Promise.all([getMonthSummary(site.id, site.trackers, month, site.reportChartEvent), getReportNote(site.id, month)]);
   const message = summaryMessage({ siteName: site.name, contactPerson: site.client.contactPerson, month });
   const link = messageLink(site.client, message, `${site.name}: overzicht ${formatMonth(month)}`);
   const base = `/sites/${site.id}/maandrapport`;
   const ym = month.slice(0, 7);
   const hidden = hiddenParts(site.reportHidden);
   // `v` changes when the saved line or the chosen parts change, so the browser fetches the new picture.
-  const imageUrl = `/api/report-image/${site.id}?maand=${ym}&v=${note ? note.updatedAt.getTime() : 0}-${[...hidden].join(".")}`;
+  const imageUrl = `/api/report-image/${site.id}?maand=${ym}&v=${note ? note.updatedAt.getTime() : 0}-${[...hidden].join(".")}-${site.reportChartEvent ?? ""}`;
   const slug = site.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "site";
   const empty = summary.stats.current.views === 0 && summary.uptimePct == null;
 
@@ -99,7 +99,7 @@ export async function SummaryTab({ site, searchParams }: TabProps) {
             <section className={styles.panel}>
               <h2 className={styles.h2}>Wat staat erop?</h2>
               <p className={styles.muted}>Geldt voor elk maandrapport van {site.name}. Er passen maximaal vier grote cijfers op.</p>
-              <form action={saveReportParts.bind(null, site.id)} className={styles.doneForm} key={[...hidden].join(".")}>
+              <form action={saveReportParts.bind(null, site.id)} className={styles.doneForm} key={`${[...hidden].join(".")}-${site.reportChartEvent ?? ""}`}>
                 <div className={styles.parts}>
                   {REPORT_PARTS.map((p) => (
                     <label key={p.key} className={styles.part}>
@@ -111,6 +111,22 @@ export async function SummaryTab({ site, searchParams }: TabProps) {
                     </label>
                   ))}
                 </div>
+                {site.trackers.length > 0 && (
+                  <div className="field">
+                    <label className="label" htmlFor="report-chart">
+                      De grafiek per dag toont
+                    </label>
+                    <select id="report-chart" name="chart" className="input" defaultValue={site.reportChartEvent ?? ""}>
+                      <option value="">Bezoekers</option>
+                      {site.trackers.map((t) => (
+                        <option key={t.id} value={t.eventKey}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="label">Kies een resultaat (zoals bellen) om te zien op welke dagen een actie werkte.</span>
+                  </div>
+                )}
                 <div>
                   <button type="submit" className="btn btn-sm">
                     Opslaan

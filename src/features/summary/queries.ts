@@ -1,7 +1,7 @@
 import "server-only";
 import { and, eq, gte, lt, sql } from "drizzle-orm";
 import { checks, db, events, reportNotes, type Tracker } from "@/db";
-import { addMonths, monthStart, todayISO } from "@/lib/dates";
+import { addDays, addMonths, monthStart, todayISO } from "@/lib/dates";
 import { amsterdamMidnight, type Period } from "@/lib/analytics/periods";
 import { getBreakdowns, getPageviewSeries, getWebsiteStats } from "@/lib/analytics/queries";
 
@@ -27,14 +27,18 @@ export async function getReportNote(siteId: number, month: string) {
 }
 
 /** Everything for one site's monthly summary: traffic vs the month before, goals, top pages, uptime. */
-export async function getMonthSummary(siteId: number, trackers: Tracker[], month: string) {
+export async function getMonthSummary(siteId: number, trackers: Tracker[], month: string, chartEvent: string | null = null) {
   const from = amsterdamMidnight(month);
   const end = amsterdamMidnight(addMonths(month, 1));
   const to = new Date(Math.min(end.getTime() - 1, Date.now()));
   const prevFrom = amsterdamMidnight(addMonths(month, -1));
   const period: Period = { key: "30d", label: "Maand", from, to, prevFrom, prevTo: new Date(from.getTime() - 1), unit: "day", filters: [] };
 
-  const [stats, breakdowns, series, goals, uptime] = await Promise.all([
+  // The chart follows one result (e.g. calls) when the site picked a tracker, otherwise visitors.
+  const chartTracker = trackers.find((t) => t.eventKey === chartEvent) ?? null;
+  const day = sql<string>`to_char(${events.occurredAt} at time zone 'Europe/Amsterdam', 'YYYY-MM-DD')`;
+
+  const [stats, breakdowns, series, goals, prevGoals, perDay, uptime] = await Promise.all([
     getWebsiteStats(siteId, period),
     getBreakdowns(siteId, period),
     getPageviewSeries(siteId, period),
@@ -47,6 +51,34 @@ export async function getMonthSummary(siteId: number, trackers: Tracker[], month
       .from(events)
       .where(and(eq(events.siteId, siteId), gte(events.occurredAt, from), lt(events.occurredAt, end)))
       .groupBy(events.eventKey),
+    // The same totals for the month before, to say whether a result went up or down.
+    db
+      .select({
+        key: events.eventKey,
+        count: sql<number>`count(*)::int`,
+        sum: sql<number>`coalesce(sum(${events.value}), 0)`.mapWith(Number),
+      })
+      .from(events)
+      .where(and(eq(events.siteId, siteId), gte(events.occurredAt, prevFrom), lt(events.occurredAt, from)))
+      .groupBy(events.eventKey),
+    chartTracker
+      ? db
+          .select({
+            day,
+            count: sql<number>`count(*)::int`,
+            sum: sql<number>`coalesce(sum(${events.value}), 0)`.mapWith(Number),
+          })
+          .from(events)
+          .where(
+            and(
+              eq(events.siteId, siteId),
+              eq(events.eventKey, chartTracker.eventKey),
+              gte(events.occurredAt, from),
+              lt(events.occurredAt, end),
+            ),
+          )
+          .groupBy(day)
+      : [],
     db
       .select({
         total: sql<number>`count(*)::int`,
@@ -57,17 +89,31 @@ export async function getMonthSummary(siteId: number, trackers: Tracker[], month
   ]);
 
   const byKey = new Map(goals.map((g) => [g.key, g]));
+  const prevByKey = new Map(prevGoals.map((g) => [g.key, g]));
+  const total = (t: Tracker, g: { count: number; sum: number } | undefined) =>
+    t.aggregation === "sum" ? (g?.sum ?? 0) : (g?.count ?? 0);
+
+  // One entry per calendar day of the month (up to today), also for days with nothing.
+  const lastDay = [addDays(addMonths(month, 1), -1), todayISO()].sort()[0];
+  const valueByDay = chartTracker
+    ? new Map(perDay.map((r) => [r.day, chartTracker.aggregation === "sum" ? r.sum : r.count]))
+    : new Map(series.map((p) => [p.bucket, p.visitors]));
+  const days: { day: string; value: number }[] = [];
+  for (let d = month; d <= lastDay; d = addDays(d, 1)) days.push({ day: d, value: valueByDay.get(d) ?? 0 });
+
   return {
     stats,
-    /** Visitors per day of the month, for the small chart. */
-    days: series.map((p) => ({ day: p.bucket, visitors: p.visitors })),
+    /** The per-day chart: what it counts and the value for every day of the month. */
+    chart: { label: chartTracker?.name ?? "Bezoekers", isMoney: chartTracker?.aggregation === "sum", days },
     // Legal pages say nothing about the business, and a "top pages" list of one is no list.
     pages: breakdowns.pages.filter((p) => !LEGAL_PAGE.test(p.label)).slice(0, 5),
     referrers: breakdowns.referrers.slice(0, 5),
-    goals: trackers.map((t) => {
-      const g = byKey.get(t.eventKey);
-      return { name: t.name, aggregation: t.aggregation, value: t.aggregation === "sum" ? (g?.sum ?? 0) : (g?.count ?? 0) };
-    }),
+    goals: trackers.map((t) => ({
+      name: t.name,
+      aggregation: t.aggregation,
+      value: total(t, byKey.get(t.eventKey)),
+      previous: total(t, prevByKey.get(t.eventKey)),
+    })),
     uptimePct: uptime[0]?.total ? (100 * uptime[0].up) / uptime[0].total : null,
   };
 }

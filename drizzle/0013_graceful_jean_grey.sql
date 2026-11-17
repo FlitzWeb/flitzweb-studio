@@ -1,0 +1,1 @@
+ALTER TABLE "sites" ADD COLUMN "report_chart_event" text;
