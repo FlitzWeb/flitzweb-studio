@@ -151,3 +151,35 @@
   padding: 0 8px;
   font-size: 0.8125rem;
 }
+
+/* ---------- Inkomsten / Kosten switch ---------- */
+
+.tabs {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--line);
+}
+.tab {
+  position: relative;
+  padding: 10px 12px 12px;
+  color: var(--ink-3);
+  font-size: 0.875rem;
+  font-weight: 550;
+  text-decoration: none;
+}
+.tab:hover {
+  color: var(--ink);
+}
+.tab[aria-current="page"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+.tab[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 8px -1px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--brand);
+}

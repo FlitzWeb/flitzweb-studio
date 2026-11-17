@@ -1,4 +1,4 @@
-import { LayoutGrid, Receipt, Target, Users, Wallet, type LucideIcon } from "lucide-react";
+import { LayoutGrid, Target, Users, Wallet, type LucideIcon } from "lucide-react";
 
 // Main navigation. Add an entry here when a new section gets its own page.
 export const navItems: { href: string; label: string; icon: LucideIcon }[] = [
@@ -6,9 +6,10 @@ export const navItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/leads", label: "Leads", icon: Target },
   { href: "/klanten", label: "Klanten", icon: Users },
   { href: "/geld", label: "Geld", icon: Wallet },
-  { href: "/kosten", label: "Kosten", icon: Receipt },
 ];
 
-/** The overview also owns the site pages. */
+/** The overview also owns the site pages, and Geld owns Kosten (a tab on the Geld page). */
 export const isActive = (href: string, pathname: string) =>
-  href === "/" ? pathname === "/" || pathname.startsWith("/sites") : pathname.startsWith(href);
+  href === "/"
+    ? pathname === "/" || pathname.startsWith("/sites")
+    : pathname.startsWith(href) || (href === "/geld" && pathname.startsWith("/kosten"));

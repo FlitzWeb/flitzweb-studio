@@ -1,5 +1,6 @@
 import { CalendarClock, Plus, Receipt, Scale, Wallet } from "lucide-react";
 import type { Metadata } from "next";
+import { MoneyTabs } from "@/features/money/MoneyTabs";
 import Link from "next/link";
 import { KpiCard } from "@/components/KpiCard";
 import { CostList } from "@/features/costs/CostList";
@@ -19,7 +20,7 @@ export default async function CostsPage() {
     <>
       <header className="page-head">
         <div>
-          <h1 className="page-title">Kosten</h1>
+          <h1 className="page-title">Geld</h1>
           <p className="page-sub">Wat FlitzWeb zelf betaalt: abonnementen, domeinen en software</p>
         </div>
         <div className="page-actions">
@@ -29,6 +30,8 @@ export default async function CostsPage() {
           </Link>
         </div>
       </header>
+
+      <MoneyTabs active="/kosten" />
 
       <section className={overview.kpis} aria-label="Totalen">
         <KpiCard

@@ -1,5 +1,6 @@
 import { AlertTriangle, CircleCheck, Clock, Plus, Repeat } from "lucide-react";
 import type { Metadata } from "next";
+import { MoneyTabs } from "@/features/money/MoneyTabs";
 import Link from "next/link";
 import { KpiCard } from "@/components/KpiCard";
 import { MoneyList } from "@/features/money/MoneyList";
@@ -36,6 +37,8 @@ export default async function MoneyPage() {
           </Link>
         </div>
       </header>
+
+      <MoneyTabs active="/geld" />
 
       <section className={overview.kpis} aria-label="Totalen">
         <KpiCard icon={<Clock />} label="Open" value={formatEuro(summary.awaitingCents)} hint="Verstuurd, nog niet betaald" />
