@@ -65,6 +65,7 @@ export async function VersionsTab({ site }: TabProps) {
           badge={status}
           url={site.conceptUrl}
           empty="Nog geen concept-adres ingevuld. Zet het onder Bewerken → Versies."
+          hint="Blijft dit vak leeg? Dan zit er een login voor het voorbeeldadres. Bij Vercel zet je die uit onder Settings → Deployment Protection; anders ziet je klant ook alleen een inlogscherm."
         />
       </div>
 
@@ -132,11 +133,13 @@ function Version({
   badge,
   url,
   empty,
+  hint,
 }: {
   title: string;
   badge: { text: string; tone?: string };
   url: string | null;
   empty?: string;
+  hint?: string;
 }) {
   return (
     <section className={tabStyles.panel}>
@@ -169,6 +172,7 @@ function Version({
           </a>
         </div>
       )}
+      {url && hint && <p className={styles.note}>{hint}</p>}
     </section>
   );
 }
