@@ -148,3 +148,43 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+.report {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .report {
+    grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  }
+}
+.reportImage {
+  display: block;
+  margin-top: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.reportImage img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.doneForm {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.doneForm textarea {
+  min-height: 84px;
+  padding-block: 10px;
+}
+.sendTools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}

@@ -3,7 +3,7 @@ import { and, eq, gte, lt, sql } from "drizzle-orm";
 import { checks, db, events, type Tracker } from "@/db";
 import { addMonths, monthStart, todayISO } from "@/lib/dates";
 import { amsterdamMidnight, type Period } from "@/lib/analytics/periods";
-import { getBreakdowns, getWebsiteStats } from "@/lib/analytics/queries";
+import { getBreakdowns, getPageviewSeries, getWebsiteStats } from "@/lib/analytics/queries";
 
 const isMonth = (v: unknown): v is string => typeof v === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(v);
 
@@ -23,9 +23,10 @@ export async function getMonthSummary(siteId: number, trackers: Tracker[], month
   const prevFrom = amsterdamMidnight(addMonths(month, -1));
   const period: Period = { key: "30d", label: "Maand", from, to, prevFrom, prevTo: new Date(from.getTime() - 1), unit: "day", filters: [] };
 
-  const [stats, breakdowns, goals, uptime] = await Promise.all([
+  const [stats, breakdowns, series, goals, uptime] = await Promise.all([
     getWebsiteStats(siteId, period),
     getBreakdowns(siteId, period),
+    getPageviewSeries(siteId, period),
     db
       .select({
         key: events.eventKey,
@@ -47,6 +48,8 @@ export async function getMonthSummary(siteId: number, trackers: Tracker[], month
   const byKey = new Map(goals.map((g) => [g.key, g]));
   return {
     stats,
+    /** Visitors per day of the month, for the small chart. */
+    days: series.map((p) => ({ day: p.bucket, visitors: p.visitors })),
     pages: breakdowns.pages.slice(0, 5),
     referrers: breakdowns.referrers.slice(0, 5),
     goals: trackers.map((t) => {

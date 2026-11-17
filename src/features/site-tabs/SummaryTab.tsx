@@ -1,24 +1,29 @@
-import { ChevronLeft, ChevronRight, Send } from "lucide-react";
+/* eslint-disable @next/next/no-img-element -- generated on the fly by /api/report-image */
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { CopyButton } from "@/components/CopyButton";
 import { StatTile, StatTiles } from "@/components/StatTile";
 import { messageLink } from "@/features/clients/messageLink";
-import { changeText, goalValue, summaryMessage } from "@/features/summary/message";
+import { cleanDone, DONE_MAX, highlights, summaryMessage } from "@/features/summary/message";
 import { getMonthSummary, summaryMonth } from "@/features/summary/queries";
+import { ShareReport } from "@/features/summary/ShareReport";
 import { formatMonth } from "@/lib/dates";
-import { formatPct } from "@/lib/format";
 import type { TabProps } from "./registry";
 import styles from "./tabs.module.css";
 
-/** One month in plain numbers, plus a ready-to-send update for the client. */
+/** One month as a picture to send the client, with the numbers it is built from. */
 export async function SummaryTab({ site, searchParams }: TabProps) {
   const { month, prev, next, isCurrent } = summaryMonth(searchParams.maand);
+  const done = cleanDone(searchParams.gedaan);
   const summary = await getMonthSummary(site.id, site.trackers, month);
-  const { current, previous } = summary.stats;
-  const message = summaryMessage({ siteName: site.name, contactPerson: site.client.contactPerson, month, summary });
+  const message = summaryMessage({ siteName: site.name, contactPerson: site.client.contactPerson, month });
   const link = messageLink(site.client, message, `${site.name}: overzicht ${formatMonth(month)}`);
   const base = `/sites/${site.id}/maandrapport`;
-  const empty = current.views === 0 && summary.uptimePct == null;
+  const ym = month.slice(0, 7);
+  const keep = done ? `&gedaan=${encodeURIComponent(done)}` : "";
+  const imageUrl = `/api/report-image/${site.id}?maand=${ym}${keep}`;
+  const slug = site.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "site";
+  const empty = summary.stats.current.views === 0 && summary.uptimePct == null;
 
   return (
     <div className={styles.stack}>
@@ -43,15 +48,11 @@ export async function SummaryTab({ site, searchParams }: TabProps) {
             )}
           </div>
         </div>
-
         <div className={styles.tilesWrap}>
           <StatTiles>
-            <StatTile label="Bezoekers" value={current.visitors.toLocaleString("nl-NL")} hint={changeText(current.visitors, previous.visitors)} />
-            <StatTile label="Pagina's bekeken" value={current.views.toLocaleString("nl-NL")} hint={changeText(current.views, previous.views)} />
-            {summary.goals.map((g) => (
-              <StatTile key={g.name} label={g.name} value={goalValue(g)} />
+            {highlights(summary).map((h) => (
+              <StatTile key={h.label} label={h.label} value={h.value} hint={h.note} />
             ))}
-            <StatTile label="Bereikbaar" value={summary.uptimePct != null ? formatPct(summary.uptimePct) : null} unit="%" />
           </StatTiles>
         </div>
       </section>
@@ -59,57 +60,64 @@ export async function SummaryTab({ site, searchParams }: TabProps) {
       {empty ? (
         <p className={styles.muted}>Geen metingen in deze maand, dus er is nog niets om te sturen.</p>
       ) : (
-        <>
-          <div className={styles.columns}>
-            <TopList title="Meest bekeken pagina's" rows={summary.pages} />
-            <TopList title="Waar bezoekers vandaan kwamen" rows={summary.referrers} />
-          </div>
-
+        <div className={styles.report}>
           <section className={styles.panel}>
-            <div className={styles.panelHead}>
-              <div>
-                <h2 className={styles.h2}>Bericht voor {site.client.contactPerson ?? site.client.name}</h2>
-                <p className={styles.muted}>Kopieer het, of open het in WhatsApp of mail. Je kunt het daar nog aanpassen.</p>
+            <h2 className={styles.h2}>Rapport voor {site.client.contactPerson ?? site.client.name}</h2>
+            <p className={styles.muted}>Dit is de afbeelding die je stuurt. De belangrijkste cijfers staan bovenaan.</p>
+            <a href={imageUrl} target="_blank" rel="noreferrer" className={styles.reportImage}>
+              <img src={imageUrl} alt={`Maandoverzicht ${site.name}, ${formatMonth(month)}`} width={1080} height={1350} />
+            </a>
+          </section>
+
+          <div className={styles.stack}>
+            <section className={styles.panel}>
+              <h2 className={styles.h2}>Wat heb je deze maand gedaan?</h2>
+              <p className={styles.muted}>Eén zin, komt onderaan op het rapport. Mag leeg blijven.</p>
+              <form method="get" action={base} className={styles.doneForm}>
+                <input type="hidden" name="maand" value={ym} />
+                <textarea
+                  name="gedaan"
+                  className="input"
+                  aria-label="Deze maand gedaan"
+                  defaultValue={done}
+                  maxLength={DONE_MAX}
+                  placeholder="Prijzenpagina bijgewerkt en de openingstijden voor de feestdagen aangepast."
+                />
+                <div>
+                  <button type="submit" className="btn btn-sm">
+                    Op rapport zetten
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <section className={styles.panel}>
+              <h2 className={styles.h2}>Versturen</h2>
+              <p className={styles.muted}>
+                Op je telefoon stuurt “Deel afbeelding” het rapport direct door naar WhatsApp. Op de computer download je het en
+                voeg je het zelf toe.
+              </p>
+              <div className={styles.sendTools}>
+                <ShareReport imageUrl={imageUrl} fileName={`maandoverzicht-${slug}-${ym}.png`} message={message} />
               </div>
-              <div className={styles.monthNav}>
-                <CopyButton text={message} />
+              <pre className={styles.message}>{message}</pre>
+              <div className={styles.sendTools}>
+                <CopyButton text={message} label="Kopieer bericht" />
                 {link && (
                   <a
                     href={link.href}
-                    className="btn btn-sm btn-primary"
+                    className="btn btn-sm"
                     target={link.channel === "whatsapp" ? "_blank" : undefined}
                     rel={link.channel === "whatsapp" ? "noreferrer" : undefined}
                   >
-                    <Send aria-hidden="true" />
-                    {link.channel === "whatsapp" ? "Open in WhatsApp" : "Open in mail"}
+                    {link.channel === "whatsapp" ? "Open chat in WhatsApp" : "Open in mail"}
                   </a>
                 )}
               </div>
-            </div>
-            <pre className={styles.message}>{message}</pre>
-          </section>
-        </>
+            </section>
+          </div>
+        </div>
       )}
     </div>
-  );
-}
-
-function TopList({ title, rows }: { title: string; rows: { label: string; count: number }[] }) {
-  return (
-    <section className={styles.panel}>
-      <h2 className={styles.h2}>{title}</h2>
-      {rows.length === 0 ? (
-        <p className={styles.muted}>Niets gemeten.</p>
-      ) : (
-        <ul className={styles.list}>
-          {rows.map((r) => (
-            <li key={r.label}>
-              <span>{r.label}</span>
-              <span className="num">{r.count.toLocaleString("nl-NL")}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
   );
 }

@@ -92,7 +92,7 @@ The schema is ready for it: `payments` and `subscription_charges` have `provider
 - Each lead and client has a **follow-up date** and a **contact log** (`contact_log`). Logging the first contact moves a fresh lead to Benaderd.
 - The home page's **Vandaag** list shows sites that are down, late payments, follow-ups that are due and payments expected within a week.
 - Late invoices and charges get a **Herinnering** button (opens WhatsApp or mail with the text filled in; nothing is sent by the Studio itself), and the cron job emails you once per item when it passes its due date (`features/money/overdueAlerts.ts`).
-- A site's **Maandrapport** tab is the monthly update for the client (`features/summary/`).
+- A site's **Maandrapport** tab is the monthly update for the client: a 1080 × 1350 picture rendered by `/api/report-image/[siteId]` (`next/og`, login required) that leads with results, plus a short message to send with it (`features/summary/`). On a phone, "Deel afbeelding" passes the picture to WhatsApp through the share sheet.
 - Events, Bezoekers, Rapporten and Live are marked `hidden` in `features/site-tabs/registry.ts`: out of the tab bar, still reachable from the bottom of the Stats tab.
 
 ## Stats (Umami-style analytics)

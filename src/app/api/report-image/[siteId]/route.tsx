@@ -1,0 +1,157 @@
+/* eslint-disable @next/next/no-img-element -- rendered to a PNG by next/og, not shown in a page */
+import { cookies } from "next/headers";
+import { ImageResponse } from "next/og";
+import { cleanDone, highlights } from "@/features/summary/message";
+import { getMonthSummary, summaryMonth } from "@/features/summary/queries";
+import { formatMonth } from "@/lib/dates";
+import { displayHost } from "@/lib/format";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
+import { getSite } from "@/lib/sites";
+
+// The monthly report as a picture (1080 × 1350, the tall format WhatsApp and
+// Instagram show in full) to send to the client. Login required.
+// next/og only does flexbox, so every box with more than one child sets display: flex.
+
+const W = 1080;
+const H = 1350;
+const PAD = 32; // grey margin around the white card
+const INNER = 56; // card padding left and right
+const CONTENT = W - 2 * PAD - 2 * INNER - 4; // usable width inside the card (minus its border)
+const INK = "#0e1420";
+const INK_2 = "#4a5465";
+const INK_3 = "#687284";
+const LINE = "#e5e8ed";
+const BRAND = "#2563eb";
+
+// public/brand/mark.svg, inlined so the image needs no file or network access.
+const MARK = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="36 166 276 202"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3B82F6"/><stop offset="1" stop-color="#06B6D4"/></linearGradient></defs><g transform="rotate(-14 228 256)"><rect x="64" y="196" width="64" height="22" rx="11" fill="url(#g)" opacity="0.3"/><rect x="52" y="250" width="94" height="22" rx="11" fill="url(#g)" opacity="0.55"/><rect x="70" y="304" width="72" height="22" rx="11" fill="url(#g)" opacity="0.78"/><path d="M156,152 L156,344 L204,296 L240,360 L276,344 L240,284 L300,284 Z" fill="url(#g)"/></g></svg>',
+)}`;
+
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+export async function GET(request: Request, { params }: { params: Promise<{ siteId: string }> }) {
+  const email = await verifySessionToken((await cookies()).get(SESSION_COOKIE)?.value);
+  if (!email || email !== process.env.ADMIN_EMAIL?.trim().toLowerCase()) {
+    return new Response(null, { status: 401 });
+  }
+  const id = Number((await params).siteId);
+  const site = Number.isInteger(id) ? await getSite(id) : undefined;
+  if (!site) return new Response(null, { status: 404 });
+
+  const url = new URL(request.url);
+  const { month } = summaryMonth(url.searchParams.get("maand"));
+  const done = cleanDone(url.searchParams.get("gedaan"));
+  const summary = await getMonthSummary(site.id, site.trackers, month);
+  const tiles = highlights(summary);
+  const maxDay = Math.max(...summary.days.map((d) => d.visitors), 1);
+  const monthLabel = capitalize(formatMonth(month));
+
+  const image = new ImageResponse(
+    (
+      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: "#f3f5f8", padding: PAD, fontFamily: "sans-serif", color: INK }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#fff", borderRadius: 36, border: `2px solid ${LINE}`, padding: `44px ${INNER}px 36px` }}>
+          {/* Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <img src={MARK} width={58} height={42} alt="" />
+              <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: -1 }}>FlitzWeb</div>
+            </div>
+            <div style={{ display: "flex", fontSize: 24, fontWeight: 600, color: BRAND, background: "#eaf1fe", borderRadius: 999, padding: "10px 22px" }}>
+              Maandoverzicht
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", marginTop: 36 }}>
+            <div style={{ fontSize: 28, color: INK_3, fontWeight: 500 }}>{monthLabel}</div>
+            <div style={{ fontSize: 56, fontWeight: 700, letterSpacing: -2, lineHeight: 1.1, marginTop: 4 }}>{site.name}</div>
+            <div style={{ fontSize: 26, color: INK_3, marginTop: 8 }}>{displayHost(site.url)}</div>
+          </div>
+
+          {/* The numbers that matter, two per row */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 20, marginTop: 32 }}>
+            {tiles.map((t, i) => (
+              <div
+                key={t.label}
+                style={{
+                  width: tiles.length === 3 && i === 2 ? CONTENT : (CONTENT - 20) / 2,
+                  display: "flex",
+                  flexDirection: "column",
+                  borderRadius: 24,
+                  padding: "20px 28px",
+                  background: i === 0 ? BRAND : "#f6f7f9",
+                  color: i === 0 ? "#fff" : INK,
+                }}
+              >
+                <div style={{ fontSize: 26, fontWeight: 500, color: i === 0 ? "#dbe7ff" : INK_2 }}>{t.label}</div>
+                <div style={{ fontSize: 66, fontWeight: 700, letterSpacing: -2, lineHeight: 1.15 }}>{t.value}</div>
+                <div style={{ fontSize: 22, color: i === 0 ? "#dbe7ff" : INK_3, minHeight: 28 }}>{t.note ?? " "}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Visitors per day */}
+          <div style={{ display: "flex", flexDirection: "column", marginTop: 30 }}>
+            <div style={{ fontSize: 24, fontWeight: 600, color: INK_2 }}>Bezoekers per dag</div>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 96, marginTop: 12, borderBottom: `2px solid ${LINE}` }}>
+              {summary.days.map((d) => (
+                <div
+                  key={d.day}
+                  style={{
+                    flex: 1,
+                    height: Math.max(Math.round((d.visitors / maxDay) * 92), 4),
+                    borderRadius: "6px 6px 0 0",
+                    background: d.visitors === maxDay && d.visitors > 0 ? BRAND : "#c9dafc",
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Top pages and sources */}
+          <div style={{ display: "flex", gap: 40, marginTop: 28 }}>
+            <TopList title="Meest bekeken" rows={summary.pages} />
+            <TopList title="Bezoekers kwamen via" rows={summary.referrers} />
+          </div>
+
+          {done && (
+            <div style={{ display: "flex", flexDirection: "column", marginTop: 26, borderRadius: 20, background: "#eaf1fe", padding: "18px 26px" }}>
+              <div style={{ fontSize: 22, fontWeight: 600, color: BRAND }}>Deze maand gedaan</div>
+              <div style={{ fontSize: 25, lineHeight: 1.35, marginTop: 4 }}>{done}</div>
+            </div>
+          )}
+
+          <div style={{ flex: 1, display: "flex" }} />
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 22, color: INK_3, borderTop: `2px solid ${LINE}`, paddingTop: 18, marginTop: 16 }}>
+            <div>Gemaakt en onderhouden door FlitzWeb</div>
+            <div>flitzweb.nl</div>
+          </div>
+        </div>
+      </div>
+    ),
+    { width: W, height: H },
+  );
+
+  const slug = site.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "site";
+  image.headers.set("Content-Disposition", `inline; filename="maandoverzicht-${slug}-${month.slice(0, 7)}.png"`);
+  image.headers.set("Cache-Control", "private, no-store");
+  return image;
+}
+
+function TopList({ title, rows }: { title: string; rows: { label: string; count: number }[] }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <div style={{ fontSize: 24, fontWeight: 600, color: INK_2 }}>{title}</div>
+      {rows.length === 0 ? (
+        <div style={{ fontSize: 24, color: INK_3, marginTop: 10 }}>Nog niets gemeten</div>
+      ) : (
+        rows.slice(0, 3).map((r) => (
+          <div key={r.label} style={{ display: "flex", justifyContent: "space-between", gap: 16, fontSize: 25, marginTop: 10 }}>
+            <div style={{ display: "flex", maxWidth: 300, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{r.label === "/" ? "Homepagina" : r.label}</div>
+            <div style={{ display: "flex", fontWeight: 600, color: INK_2 }}>{r.count.toLocaleString("nl-NL")}</div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
