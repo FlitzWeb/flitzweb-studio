@@ -121,3 +121,109 @@
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   gap: var(--space-4);
 }
+
+/* ---------- Vandaag: what needs doing ---------- */
+
+.todo {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.todo li {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+.todo li + li {
+  border-top: 1px solid var(--line);
+}
+.todoIcon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+.todoIcon svg {
+  width: 17px;
+  height: 17px;
+}
+.todo [data-tone="danger"] .todoIcon {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.todo [data-tone="quiet"] .todoIcon {
+  background: var(--surface-3);
+  color: var(--ink-3);
+}
+.todoMain {
+  flex: 1;
+  min-width: min(100%, 180px);
+  display: grid;
+  gap: 1px;
+  text-decoration: none;
+}
+.todoMain strong {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+.todoMain small {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+.todo [data-tone="danger"] .todoMain small {
+  color: var(--danger);
+}
+.todoMain:hover strong {
+  color: var(--brand-ink);
+}
+.todoTools {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* ---------- Pipeline counts ---------- */
+
+.stages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+.stages a {
+  display: grid;
+  grid-template-columns: 96px 1fr 28px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 8px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+.stages a:hover {
+  background: var(--surface-2);
+}
+.stages .num {
+  text-align: right;
+  font-weight: 650;
+}
+.stageBar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--chart-track);
+  overflow: hidden;
+}
+.stageBar i {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  background: var(--chart-1);
+}

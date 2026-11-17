@@ -1,61 +1,38 @@
-import { Activity, ArrowRight, BarChart3, Globe, Plus, ShieldCheck, Timer, Users, Wallet } from "lucide-react";
+import { AlarmClock, ArrowRight, CircleAlert, Globe, ListChecks, MessageCircle, Plus, Target, Wallet, WifiOff } from "lucide-react";
 import Link from "next/link";
 import { AutoRefresh } from "@/components/AutoRefresh";
-import { DayBars } from "@/components/charts/DayBars";
 import { Gauge } from "@/components/charts/Gauge";
-import { Delta } from "@/components/Delta";
 import { KpiCard } from "@/components/KpiCard";
+import { ContactActions } from "@/features/clients/ContactActions";
+import { getDueFollowUps, getStageCounts } from "@/features/clients/queries";
+import { OPEN_STAGES, stageLabels } from "@/features/clients/stages";
+import { MarkPaidButton } from "@/features/money/MarkPaidButton";
 import { getMoneySummary } from "@/features/money/queries";
 import { CheckNowButton } from "@/features/uptime/CheckNowButton";
-import { ResponseOverviewChart, type ResponseSeries } from "@/features/uptime/ResponseOverviewChart";
 import { SiteTable } from "@/features/uptime/SiteTable";
-import { getPageviewSeries, getWebsiteStats } from "@/lib/analytics/queries";
-import { getPeriod } from "@/lib/analytics/periods";
-import { formatEuro, formatPct } from "@/lib/format";
-import { recentChecks, responseAverages, getSiteOverviews, type SiteOverview } from "@/lib/uptime/queries";
+import { addDays, formatDue, todayISO } from "@/lib/dates";
+import { formatDuration, formatEuro } from "@/lib/format";
+import { getSiteOverviews } from "@/lib/uptime/queries";
 import styles from "./overview.module.css";
 
-const SERIES_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)"];
-const BUCKET_MS = 15 * 60_000;
-const UPTIME_TARGET = 99.9;
-
 const dayFmt = new Intl.DateTimeFormat("nl-NL", { timeZone: "Europe/Amsterdam", weekday: "long", day: "numeric", month: "long" });
-const weekdayFmt = new Intl.DateTimeFormat("nl-NL", { timeZone: "UTC", weekday: "short" });
-const fullDayFmt = new Intl.DateTimeFormat("nl-NL", { timeZone: "UTC", weekday: "long", day: "numeric", month: "short" });
 
 export default async function OverviewPage() {
-  const sites = await getSiteOverviews();
+  const today = todayISO();
+  const [sites, money, followUps, stages] = await Promise.all([
+    getSiteOverviews(),
+    getMoneySummary(),
+    getDueFollowUps(today),
+    getStageCounts(),
+  ]);
   const live = sites.filter((s) => s.monitored);
   const down = live.filter((s) => s.isUp === false);
-  const period = getPeriod("7d");
 
-  const [response, money, chart, traffic] = await Promise.all([
-    responseAverages(),
-    getMoneySummary(),
-    responseSeries(live),
-    // Every site with a tracker counts, also ones still being built.
-    Promise.all(
-      sites.map(async (s) => {
-        const [stats, series] = await Promise.all([getWebsiteStats(s.id, period), getPageviewSeries(s.id, period)]);
-        return { stats, series };
-      }),
-    ),
-  ]);
-
-  const visitors = traffic.reduce((t, x) => t + x.stats.current.visitors, 0);
-  const visitorsBefore = traffic.reduce((t, x) => t + x.stats.previous.visitors, 0);
-  const days = (traffic[0]?.series ?? []).map((p, i) => {
-    const date = new Date(`${p.bucket}T00:00:00Z`);
-    return {
-      key: p.bucket,
-      label: weekdayFmt.format(date).replace(".", ""),
-      full: fullDayFmt.format(date),
-      value: traffic.reduce((t, x) => t + (x.series[i]?.visitors ?? 0), 0),
-    };
-  });
-
-  const uptimes = live.map((s) => s.uptime30).filter((u): u is number => u != null);
-  const uptimeAvg = uptimes.length ? uptimes.reduce((a, b) => a + b, 0) / uptimes.length : null;
+  const overdue = money.outstanding.filter((i) => i.status === "overdue");
+  const dueSoon = money.outstanding.filter((i) => i.status === "awaiting" && i.dueDate <= addDays(today, 7));
+  const openLeads = OPEN_STAGES.reduce((t, s) => t + stages[s], 0);
+  const todoCount = down.length + overdue.length + followUps.length;
+  const maxStage = Math.max(...OPEN_STAGES.map((s) => stages[s]), 1);
 
   const expected = money.mrrCents;
   const received = money.paidThisMonthCents;
@@ -67,19 +44,43 @@ export default async function OverviewPage() {
         <div>
           <h1 className="page-title">Overzicht</h1>
           <p className="page-sub">
-            <span className={styles.today}>{dayFmt.format(new Date())}</span> · {headline(live.length, down.length)}
+            <span className={styles.today}>{dayFmt.format(new Date())}</span> ·{" "}
+            {todoCount === 0 ? "niets dat op je wacht" : todoCount === 1 ? "1 ding te doen" : `${todoCount} dingen te doen`}
           </p>
         </div>
         <div className="page-actions">
           <CheckNowButton />
-          <Link href="/sites/nieuw" className="btn btn-primary">
+          <Link href="/klanten/nieuw?fase=lead" className="btn btn-primary">
             <Plus aria-hidden="true" />
-            Nieuwe site
+            Nieuwe lead
           </Link>
         </div>
       </header>
 
       <section className={styles.kpis} aria-label="Kerncijfers">
+        <KpiCard
+          icon={<AlarmClock />}
+          label="Opvolgen"
+          value={followUps.length}
+          tone={followUps.length > 0 ? "danger" : undefined}
+          hint={followUps.length ? "Vandaag of eerder gepland" : "Niemand wacht op je"}
+          href="/leads"
+        />
+        <KpiCard
+          icon={<Target />}
+          label="In de pijplijn"
+          value={openLeads}
+          hint={`${stages.replied + stages.meeting} met reactie of afspraak`}
+          href="/leads"
+        />
+        <KpiCard
+          icon={<CircleAlert />}
+          label="Te laat betaald"
+          value={formatEuro(money.overdueCents)}
+          tone={money.overdueCents > 0 ? "danger" : undefined}
+          hint={money.overdueCount ? `${money.overdueCount} ${money.overdueCount === 1 ? "post" : "posten"} over de vervaldatum` : "Niets te laat"}
+          href="/geld"
+        />
         <KpiCard
           icon={<Globe />}
           label="Sites online"
@@ -94,71 +95,128 @@ export default async function OverviewPage() {
           }
           hint={sites.length > live.length ? `${sites.length - live.length} niet gemonitord` : "Elke 5 minuten gecheckt"}
         />
-        <KpiCard
-          icon={<Users />}
-          label="Bezoekers"
-          value={sites.length ? visitors.toLocaleString("nl-NL") : null}
-          delta={<Delta current={visitors} previous={visitorsBefore} />}
-          hint={`7 dagen · vorige week ${visitorsBefore.toLocaleString("nl-NL")}`}
-        />
-        <KpiCard
-          icon={<Timer />}
-          label="Reactietijd"
-          value={response.current}
-          unit="ms"
-          delta={<Delta current={response.current} previous={response.previous} better="down" />}
-          hint={response.previous != null ? `24 uur · daarvoor ${response.previous} ms` : "Gemiddelde, laatste 24 uur"}
-        />
-        <KpiCard
-          icon={<ShieldCheck />}
-          label="Uptime"
-          value={uptimeAvg != null ? formatPct(uptimeAvg) : null}
-          unit="%"
-          tone={uptimeAvg != null && uptimeAvg < UPTIME_TARGET ? "danger" : undefined}
-          delta={
-            uptimeAvg != null && (
-              <span className="badge" data-tone={uptimeAvg >= UPTIME_TARGET ? "ok" : "warn"}>
-                {uptimeAvg >= UPTIME_TARGET ? "Op doel" : "Onder doel"}
-              </span>
-            )
-          }
-          hint={`30 dagen · doel ${formatPct(UPTIME_TARGET)}%`}
-        />
       </section>
 
       <div className={styles.grid}>
-        <section className={`card ${styles.panel} ${styles.wide}`} aria-labelledby="h-response">
+        <section className={`card ${styles.panel} ${styles.wide}`} aria-labelledby="h-today">
           <div className="card-head">
             <span className="icon-chip" aria-hidden="true">
-              <Activity />
+              <ListChecks />
             </span>
-            <h2 id="h-response" className="card-title">
-              Reactietijd
+            <h2 id="h-today" className="card-title">
+              Vandaag
             </h2>
-            <span className={styles.meta}>Laatste 24 uur</span>
+            <span className={styles.meta}>{todoCount === 0 ? "Alles gedaan" : `${todoCount} te doen`}</span>
           </div>
-          {chart.series.length > 0 && chart.points.length > 1 ? (
-            <ResponseOverviewChart points={chart.points} series={chart.series} />
+
+          {todoCount + dueSoon.length === 0 ? (
+            <Empty text="Niets dat op je wacht. Goed moment om nieuwe leads te benaderen.">
+              <Link href="/leads" className="btn btn-sm">
+                Naar leads
+              </Link>
+            </Empty>
           ) : (
-            <Empty text="Nog te weinig checks voor een grafiek. Na een paar uur monitoren verschijnt hier de lijn." />
+            <ul className={styles.todo}>
+              {down.map((s) => (
+                <li key={`site-${s.id}`} data-tone="danger">
+                  <span className={styles.todoIcon} aria-hidden="true">
+                    <WifiOff />
+                  </span>
+                  <Link href={`/sites/${s.id}`} className={styles.todoMain}>
+                    <strong>{s.name} ligt eruit</strong>
+                    <small>
+                      {s.downForMs != null ? `Al ${formatDuration(s.downForMs)} offline` : "Offline"} · {s.clientName}
+                    </small>
+                  </Link>
+                </li>
+              ))}
+              {overdue.map((i) => (
+                <li key={`${i.kind}-${i.id}`} data-tone="danger">
+                  <span className={styles.todoIcon} aria-hidden="true">
+                    <Wallet />
+                  </span>
+                  <Link href={`/klanten/${i.clientId}`} className={styles.todoMain}>
+                    <strong>
+                      {i.clientName} · {formatEuro(i.amountCents)}
+                    </strong>
+                    <small>
+                      {i.description} · {formatDue(i.dueDate, today)}
+                    </small>
+                  </Link>
+                  <div className={styles.todoTools}>
+                    <MarkPaidButton kind={i.kind} id={i.id} paid={false} />
+                  </div>
+                </li>
+              ))}
+              {followUps.map((c) => (
+                <li key={`follow-${c.id}`}>
+                  <span className={styles.todoIcon} aria-hidden="true">
+                    <MessageCircle />
+                  </span>
+                  <Link href={`/klanten/${c.id}`} className={styles.todoMain}>
+                    <strong>{c.name}</strong>
+                    <small>
+                      {stageLabels[c.stage]} · opvolgen {formatDue(c.nextFollowUp!, today)}
+                    </small>
+                  </Link>
+                  <div className={styles.todoTools}>
+                    <ContactActions client={c} compact />
+                  </div>
+                </li>
+              ))}
+              {dueSoon.map((i) => (
+                <li key={`soon-${i.kind}-${i.id}`} data-tone="quiet">
+                  <span className={styles.todoIcon} aria-hidden="true">
+                    <Wallet />
+                  </span>
+                  <Link href={`/klanten/${i.clientId}`} className={styles.todoMain}>
+                    <strong>
+                      {i.clientName} · {formatEuro(i.amountCents)}
+                    </strong>
+                    <small>
+                      {i.description} · verwacht {formatDue(i.dueDate, today)}
+                    </small>
+                  </Link>
+                  <div className={styles.todoTools}>
+                    <MarkPaidButton kind={i.kind} id={i.id} paid={false} />
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
         </section>
 
-        <section className={`card ${styles.panel}`} aria-labelledby="h-days">
+        <section className={`card ${styles.panel}`} aria-labelledby="h-pipeline">
           <div className="card-head">
             <span className="icon-chip" aria-hidden="true">
-              <BarChart3 />
+              <Target />
             </span>
-            <h2 id="h-days" className="card-title">
-              Drukste dag
+            <h2 id="h-pipeline" className="card-title">
+              Pijplijn
             </h2>
-            <span className={styles.meta}>Bezoekers, 7 dagen</span>
+            <div className="card-tools">
+              <Link href="/leads" className={styles.more}>
+                Leads
+                <ArrowRight aria-hidden="true" />
+              </Link>
+            </div>
           </div>
-          {days.length > 0 && visitors > 0 ? (
-            <DayBars days={days} unitLabel="bezoekers" />
-          ) : (
-            <Empty text="Nog geen bezoekers gemeten. Zet de tracker op een site om dit te vullen." />
-          )}
+          <ul className={styles.stages}>
+            {OPEN_STAGES.map((s) => (
+              <li key={s}>
+                <Link href={`/leads?fase=${s}`}>
+                  <span>{stageLabels[s]}</span>
+                  <span className={styles.stageBar} aria-hidden="true">
+                    <i style={{ width: `${(stages[s] / maxStage) * 100}%` }} />
+                  </span>
+                  <span className="num">{stages[s]}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className={styles.meta}>
+            {stages.client} {stages.client === 1 ? "klant" : "klanten"} · {stages.lost} afgevallen
+          </p>
         </section>
 
         <section className={`card ${styles.panel} ${styles.wide}`} aria-labelledby="h-sites">
@@ -240,44 +298,4 @@ function Empty({ text, children }: { text: string; children?: React.ReactNode })
       {children}
     </div>
   );
-}
-
-function headline(total: number, down: number) {
-  if (total === 0) return "nog niets te monitoren";
-  if (down === 0) return total === 1 ? "je site draait" : `alle ${total} sites draaien`;
-  if (down === total && total > 1) return "alle sites liggen eruit";
-  return down === 1 ? "één site ligt eruit" : `${down} sites liggen eruit`;
-}
-
-/** Last 24h of checks per live site, averaged into 15-minute buckets. */
-async function responseSeries(live: SiteOverview[]) {
-  const shown = [...live].sort((a, b) => a.id - b.id).slice(0, SERIES_COLORS.length);
-  const perSite = await Promise.all(shown.map((s) => recentChecks(s.id, 24)));
-
-  const buckets = new Map<number, Record<string, number[]>>();
-  const series: ResponseSeries[] = shown.map((s, i) => {
-    const key = `s${s.id}`;
-    const ok = perSite[i].filter((c) => c.isUp && c.responseMs != null);
-    for (const c of ok) {
-      const t = Math.floor(c.checkedAt.getTime() / BUCKET_MS) * BUCKET_MS;
-      const row = buckets.get(t) ?? {};
-      (row[key] ??= []).push(c.responseMs!);
-      buckets.set(t, row);
-    }
-    const avg = ok.length ? Math.round(ok.reduce((t, c) => t + c.responseMs!, 0) / ok.length) : null;
-    return { key, name: s.name, color: SERIES_COLORS[i], avg };
-  });
-
-  const points = [...buckets.entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([t, row]) => {
-      const point: { t: number } & Record<string, number | null> = { t };
-      for (const s of series) {
-        const v = row[s.key];
-        point[s.key] = v ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null;
-      }
-      return point;
-    });
-
-  return { series: series.filter((s) => s.avg != null), points };
 }
