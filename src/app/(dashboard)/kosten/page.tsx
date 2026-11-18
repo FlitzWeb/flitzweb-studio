@@ -5,6 +5,7 @@ import Link from "next/link";
 import { KpiCard } from "@/components/KpiCard";
 import { CostList } from "@/features/costs/CostList";
 import { getCostsOverview } from "@/features/costs/queries";
+import { startingLaterText } from "@/features/money/queries";
 import styles from "@/features/money/money.module.css";
 import { todayISO } from "@/lib/dates";
 import { formatDate, formatEuro } from "@/lib/format";
@@ -56,7 +57,7 @@ export default async function CostsPage() {
           label="Netto per maand"
           value={formatEuro(o.netPerMonthCents)}
           tone={o.netPerMonthCents < 0 ? "danger" : undefined}
-          hint={`${formatEuro(o.mrrCents)} MRR min kosten`}
+          hint={[`${formatEuro(o.mrrCents)} MRR min kosten`, startingLaterText(o.mrrStartingLater)].filter(Boolean).join(" · ")}
           href="/geld"
         />
       </section>

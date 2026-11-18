@@ -1,7 +1,7 @@
 import "server-only";
 import { costs, db } from "@/db";
 import { todayISO } from "@/lib/dates";
-import { getMrrCents } from "../money/queries";
+import { getSubscriptions, mrrOf, startingLater } from "../money/queries";
 import {
   amountOn,
   isPlanned,
@@ -15,10 +15,11 @@ import {
 export async function getCostsOverview() {
   const today = todayISO();
   const yearStart = `${today.slice(0, 4)}-01-01`;
-  const [rows, mrrCents] = await Promise.all([
+  const [rows, subs] = await Promise.all([
     db.select().from(costs),
-    getMrrCents(),
+    getSubscriptions({ current: true }),
   ]);
+  const mrrCents = mrrOf(subs);
 
   const all = rows.map((c) => {
     const next = nextPayment(c, today);
@@ -58,6 +59,7 @@ export async function getCostsOverview() {
     ),
     upcoming,
     mrrCents,
+    mrrStartingLater: startingLater(subs),
     netPerMonthCents: mrrCents - perMonth,
   };
 }

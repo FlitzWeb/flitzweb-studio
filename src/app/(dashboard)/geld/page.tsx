@@ -4,7 +4,7 @@ import { MoneyTabs } from "@/features/money/MoneyTabs";
 import Link from "next/link";
 import { KpiCard } from "@/components/KpiCard";
 import { MoneyList } from "@/features/money/MoneyList";
-import { getMoneySummary, getSubscriptions } from "@/features/money/queries";
+import { getMoneySummary, getSubscriptions, startingLaterText } from "@/features/money/queries";
 import { SubscriptionList } from "@/features/money/SubscriptionList";
 import styles from "@/features/money/money.module.css";
 import { formatMonth, todayISO } from "@/lib/dates";
@@ -53,7 +53,7 @@ export default async function MoneyPage() {
               : "Niets te laat"
           }
         />
-        <KpiCard icon={<Repeat />} label="MRR" value={formatEuro(summary.mrrCents)} hint="Per maand, lopende abonnementen" />
+        <KpiCard icon={<Repeat />} label="MRR" value={formatEuro(summary.mrrCents)} hint={startingLaterText(summary.startingLater) ?? "Per maand, lopende abonnementen"} />
         <KpiCard icon={<CircleCheck />} label="Betaald deze maand" value={formatEuro(summary.paidThisMonthCents)} />
       </section>
 

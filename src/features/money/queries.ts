@@ -2,7 +2,8 @@ import "server-only";
 import { and, eq, gte, isNull, or } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { clients, db, payments, sites, subscriptionCharges, subscriptions } from "@/db";
-import { addDays, diffDays, formatMonth, monthStart, todayISO } from "@/lib/dates";
+import { addDays, addMonths, diffDays, formatMonth, monthStart, todayISO } from "@/lib/dates";
+import { formatEuro } from "@/lib/format";
 import { ensureCharges } from "./charges";
 import { moneyStatus, type MoneyStatus } from "./status";
 import { payingFrom, subscriptionState, type SubscriptionState } from "./subscriptionState";
@@ -156,24 +157,44 @@ export async function getSubscriptions(filter: { clientId?: number; current?: bo
     );
 }
 
+type Sub = Awaited<ReturnType<typeof getSubscriptions>>[number];
+
 /**
- * Monthly recurring revenue: subscriptions of paying clients that are being
- * charged right now (not upcoming, not in a free month, not stopped).
+ * Monthly recurring revenue: the subscriptions that are being charged right
+ * now (not upcoming, not in a free month, not stopped).
  */
-export async function getMrrCents() {
-  const subs = await getSubscriptions({ current: true });
-  return subs.filter((s) => s.state === "running").reduce((t, s) => t + s.amountCents, 0);
+export const mrrOf = (subs: Sub[]) =>
+  subs.filter((s) => s.state === "running").reduce((t, s) => t + s.amountCents, 0);
+
+/**
+ * What is not in the MRR yet but will be: subscriptions still in a free month
+ * or with a start date ahead. `from` is the first month one of them is charged.
+ */
+export function startingLater(subs: Sub[]) {
+  const later = subs.filter((s) => s.state === "free" || s.state === "upcoming");
+  return {
+    cents: later.reduce((t, s) => t + s.amountCents, 0),
+    from: later.map((s) => s.payingFrom).sort()[0] ?? null,
+  };
 }
+export type StartingLater = ReturnType<typeof startingLater>;
+
+/** "€ 30,00 erbij vanaf december 2026", or null when nothing is waiting to start. */
+export const startingLaterText = (later: StartingLater) =>
+  later.cents > 0 && later.from ? `${formatEuro(later.cents)} erbij vanaf ${formatMonth(later.from)}` : null;
 
 /** Totals for the Geld page. */
 export async function getMoneySummary() {
   const today = todayISO();
-  const [outstanding, paidThisMonth, mrrCents, recentPaid] = await Promise.all([
+  const [outstanding, paidThisMonth, subs, recentPaid] = await Promise.all([
     getMoneyItems({ unpaid: true }),
     getMoneyItems({ paidFrom: monthStart(today) }),
-    getMrrCents(),
+    getSubscriptions({ current: true }),
     getMoneyItems({ paidFrom: addDays(today, -90) }),
   ]);
+  // Everything that should come in this month: already paid, plus what is
+  // still open and due before the month ends (older late items included).
+  const nextMonth = addMonths(today, 1);
 
   const sum = (items: MoneyItem[]) => items.reduce((t, i) => t + i.amountCents, 0);
   return {
@@ -181,8 +202,10 @@ export async function getMoneySummary() {
     awaitingCents: sum(outstanding.filter((i) => i.status === "awaiting")),
     overdueCents: sum(outstanding.filter((i) => i.status === "overdue")),
     overdueCount: outstanding.filter((i) => i.status === "overdue").length,
-    mrrCents,
+    mrrCents: mrrOf(subs),
+    startingLater: startingLater(subs),
     paidThisMonthCents: sum(paidThisMonth),
+    expectedThisMonthCents: sum(paidThisMonth) + sum(outstanding.filter((i) => i.dueDate < nextMonth)),
     recentPaid: recentPaid
       .filter((i) => i.paidDate)
       .sort((a, b) => b.paidDate!.localeCompare(a.paidDate!))

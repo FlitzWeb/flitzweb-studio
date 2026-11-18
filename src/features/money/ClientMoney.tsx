@@ -4,7 +4,7 @@ import { StatTile, StatTiles } from "@/components/StatTile";
 import type { Client } from "@/db";
 import { formatEuro } from "@/lib/format";
 import { MoneyList } from "./MoneyList";
-import { getMoneyItems, getSubscriptions } from "./queries";
+import { getMoneyItems, getSubscriptions, mrrOf, startingLater, startingLaterText } from "./queries";
 import { SubscriptionList } from "./SubscriptionList";
 import styles from "./money.module.css";
 
@@ -26,7 +26,7 @@ export async function ClientMoney({ client, returnTo }: { client: Client; return
     .sort((a, b) => b.paidDate!.localeCompare(a.paidDate!));
   const sum = (list: typeof items) => list.reduce((t, i) => t + i.amountCents, 0);
   const overdue = open.filter((i) => i.status === "overdue");
-  const mrr = subscriptions.filter((s) => s.state === "running").reduce((t, s) => t + s.amountCents, 0);
+  const mrr = mrrOf(subscriptions);
   const q = `klant=${client.id}&terug=${encodeURIComponent(returnTo)}`;
 
   return (
@@ -47,7 +47,7 @@ export async function ClientMoney({ client, returnTo }: { client: Client; return
 
       <StatTiles>
         <StatTile label="Open" value={formatEuro(sum(open))} tone={overdue.length ? "danger" : undefined} hint={overdue.length ? `${formatEuro(sum(overdue))} te laat` : undefined} />
-        <StatTile label="Abonnement" value={formatEuro(mrr)} unit="/mnd" />
+        <StatTile label="Abonnement" value={formatEuro(mrr)} unit="/mnd" hint={startingLaterText(startingLater(subscriptions)) ?? undefined} />
         <StatTile label="Totaal betaald" value={formatEuro(sum(paid))} />
       </StatTiles>
 

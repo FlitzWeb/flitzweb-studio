@@ -7,7 +7,7 @@ import { ContactActions } from "@/features/clients/ContactActions";
 import { getDueFollowUps, getStageCounts } from "@/features/clients/queries";
 import { OPEN_STAGES, stageLabels } from "@/features/clients/stages";
 import { MarkPaidButton } from "@/features/money/MarkPaidButton";
-import { getMoneySummary } from "@/features/money/queries";
+import { getMoneySummary, startingLaterText } from "@/features/money/queries";
 import { ReminderButton } from "@/features/money/ReminderButton";
 import { CheckNowButton } from "@/features/uptime/CheckNowButton";
 import { SiteTable } from "@/features/uptime/SiteTable";
@@ -37,8 +37,9 @@ export default async function OverviewPage() {
   const todoCount = down.length + overdue.length + followUps.length + toPublish.length;
   const maxStage = Math.max(...OPEN_STAGES.map((s) => stages[s]), 1);
 
-  const expected = money.mrrCents;
+  const expected = money.expectedThisMonthCents;
   const received = money.paidThisMonthCents;
+  const startingLater = startingLaterText(money.startingLater);
 
   return (
     <>
@@ -293,11 +294,11 @@ export default async function OverviewPage() {
             <Gauge
               value={received / expected}
               label={formatEuro(received)}
-              caption={`van ${formatEuro(expected)} per maand binnen`}
+              caption={received >= expected ? "alles is binnen" : `van ${formatEuro(expected)} verwacht deze maand`}
               ariaLabel={`${formatEuro(received)} van ${formatEuro(expected)} binnen deze maand`}
             />
           ) : (
-            <Empty text="Nog geen lopende abonnementen." />
+            <Empty text={startingLater ? `Deze maand wordt niets verwacht. ${startingLater}.` : "Deze maand wordt nog niets verwacht."} />
           )}
           <dl className={styles.moneyFacts}>
             <div>
@@ -308,7 +309,7 @@ export default async function OverviewPage() {
               <dt>Te laat</dt>
               <dd className="num">{formatEuro(money.overdueCents)}</dd>
             </div>
-            <div>
+            <div title={startingLater ?? undefined}>
               <dt>MRR</dt>
               <dd className="num">{formatEuro(money.mrrCents)}</dd>
             </div>
