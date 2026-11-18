@@ -36,7 +36,7 @@ export type MoneyItem = {
   };
 };
 
-type Filter = { clientId?: number; unpaid?: boolean; paidFrom?: string };
+type Filter = { clientId?: number; unpaid?: boolean };
 
 // `no_billing` clients (family, pro bono) are left out of everything here.
 const paying = eq(clients.billingType, "paying");
@@ -51,7 +51,6 @@ export async function getMoneyItems(filter: Filter = {}): Promise<MoneyItem[]> {
       paying,
       filter.clientId ? eq(clientId, filter.clientId) : undefined,
       filter.unpaid ? isNull(paidDate) : undefined,
-      filter.paidFrom ? gte(paidDate, filter.paidFrom) : undefined,
     );
 
   const contact = {
@@ -186,12 +185,13 @@ export const startingLaterText = (later: StartingLater) =>
 /** Totals for the Geld page. */
 export async function getMoneySummary() {
   const today = todayISO();
-  const [outstanding, paidThisMonth, subs, recentPaid] = await Promise.all([
-    getMoneyItems({ unpaid: true }),
-    getMoneyItems({ paidFrom: monthStart(today) }),
-    getSubscriptions({ current: true }),
-    getMoneyItems({ paidFrom: addDays(today, -90) }),
-  ]);
+  // One read of everything; the lists below are slices of it. (This used to be
+  // three separate reads, each of which also re-ran the charge generation.)
+  const [items, subs] = await Promise.all([getMoneyItems(), getSubscriptions({ current: true })]);
+  const outstanding = items.filter((i) => !i.paidDate);
+  const paidSince = (from: string) => items.filter((i) => i.paidDate && i.paidDate >= from);
+  const paidThisMonth = paidSince(monthStart(today));
+  const recentPaid = paidSince(addDays(today, -90));
   // Everything that should come in this month: already paid, plus what is
   // still open and due before the month ends (older late items included).
   const nextMonth = addMonths(today, 1);
@@ -206,10 +206,7 @@ export async function getMoneySummary() {
     startingLater: startingLater(subs),
     paidThisMonthCents: sum(paidThisMonth),
     expectedThisMonthCents: sum(paidThisMonth) + sum(outstanding.filter((i) => i.dueDate < nextMonth)),
-    recentPaid: recentPaid
-      .filter((i) => i.paidDate)
-      .sort((a, b) => b.paidDate!.localeCompare(a.paidDate!))
-      .slice(0, 10),
+    recentPaid: recentPaid.sort((a, b) => b.paidDate!.localeCompare(a.paidDate!)).slice(0, 10),
   };
 }
 

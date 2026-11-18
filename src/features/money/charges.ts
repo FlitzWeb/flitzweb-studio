@@ -1,5 +1,6 @@
 import "server-only";
 import { and, eq, isNull, lt } from "drizzle-orm";
+import { cache } from "react";
 import { db, subscriptionCharges, subscriptions } from "@/db";
 import { addMonths, dayInMonth, monthStart, todayISO } from "@/lib/dates";
 import { payingFrom } from "./subscriptionState";
@@ -8,9 +9,10 @@ import { payingFrom } from "./subscriptionState";
  * Makes sure every active subscription has a charge row for each month from
  * its start up to the current month (or its end date). Free months are
  * skipped. Idempotent, cheap, and called whenever money pages load and from
- * the cron job.
+ * the cron job. `cache` makes it run once per page load, however many lists
+ * on that page ask for money items.
  */
-export async function ensureCharges() {
+export const ensureCharges = cache(async function ensureCharges() {
   const today = todayISO();
   const subs = await db.select().from(subscriptions).where(eq(subscriptions.active, true));
 
@@ -46,4 +48,4 @@ export async function ensureCharges() {
   if (rows.length) {
     await db.insert(subscriptionCharges).values(rows).onConflictDoNothing();
   }
-}
+});
