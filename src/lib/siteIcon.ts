@@ -10,14 +10,16 @@ export type SiteIcon = { body: ArrayBuffer; type: string };
 const TIMEOUT_MS = 5000;
 const MAX_BYTES = 512 * 1024;
 const TTL_MS = 24 * 3600_000;
+// "No icon" is remembered much shorter: the site may just have been down or not built yet.
+const MISS_TTL_MS = 10 * 60_000;
 const UA = "Mozilla/5.0 (compatible; FlitzWebStudio/1.0; +https://www.flitzweb.nl)";
 
-// Per server instance: a site is fetched at most once a day.
+// Per server instance: a site with an icon is fetched at most once a day.
 const cache = new Map<string, { icon: SiteIcon | null; at: number }>();
 
 export async function getSiteIcon(siteUrl: string): Promise<SiteIcon | null> {
   const hit = cache.get(siteUrl);
-  if (hit && Date.now() - hit.at < TTL_MS) return hit.icon;
+  if (hit && Date.now() - hit.at < (hit.icon ? TTL_MS : MISS_TTL_MS)) return hit.icon;
   const icon = await findIcon(siteUrl).catch(() => null);
   cache.set(siteUrl, { icon, at: Date.now() });
   return icon;

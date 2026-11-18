@@ -26,10 +26,15 @@ export function SiteLogo({
   const img = useRef<HTMLImageElement>(null);
   const showImg = siteId != null && !failed;
 
-  // The image can fail before React is listening (server-rendered page):
+  // No icon = the route's 1×1 placeholder (or a broken image): show the letter.
+  const check = (el: HTMLImageElement) => {
+    if (el.naturalWidth <= 1) setFailed(true);
+  };
+
+  // The image can finish before React is listening (server-rendered page):
   // check once on mount so the letter still takes over.
   useEffect(() => {
-    if (img.current?.complete && img.current.naturalWidth === 0) setFailed(true);
+    if (img.current?.complete) check(img.current);
   }, []);
 
   return (
@@ -40,7 +45,7 @@ export function SiteLogo({
       aria-hidden="true"
     >
       {showImg ? (
-        <img ref={img} src={`/api/site-icon/${siteId}`} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} />
+        <img ref={img} src={`/api/site-icon/${siteId}`} alt="" loading="lazy" decoding="async" onLoad={(e) => check(e.currentTarget)} onError={() => setFailed(true)} />
       ) : (
         name.charAt(0)
       )}
