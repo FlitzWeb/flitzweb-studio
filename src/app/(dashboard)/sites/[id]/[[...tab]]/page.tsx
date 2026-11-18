@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AutoRefresh } from "@/components/AutoRefresh";
+import { KeepActiveTabVisible } from "@/features/site-tabs/KeepActiveTabVisible";
 import { tabsFor } from "@/features/site-tabs/registry";
 import { siteStatusLabels } from "@/features/sites/schema";
 import { statusLabel, statusOf } from "@/features/uptime/StatusDot";
@@ -70,6 +71,7 @@ export default async function SitePage({ params, searchParams }: Props) {
       </header>
 
       <nav className={styles.tabs} aria-label="Onderdelen">
+        <KeepActiveTabVisible />
         {tabs.map((t) => (
           <Link
             key={t.slug}
