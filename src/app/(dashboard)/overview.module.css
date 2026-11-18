@@ -9,7 +9,13 @@
 
 .kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  /* Four cards in a row when they fit (4 × 220px + gaps = 928px), otherwise
+     two by two. Never three and one: the big multiplier flips the minimum
+     column width to half the row as soon as the row is under 928px. */
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, max(220px, min(50% - var(--space-4), (928px - 100%) * 999))), 1fr)
+  );
   gap: var(--space-4);
   margin-bottom: var(--space-4);
 }
