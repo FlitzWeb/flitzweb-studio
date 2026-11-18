@@ -23,22 +23,6 @@
   font-size: 0.875rem;
   font-weight: 650;
 }
-.tooltipRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--ink-2);
-}
-.tooltipRow i {
-  width: 10px;
-  height: 3px;
-  border-radius: 2px;
-}
-.tooltipRow strong {
-  margin-left: auto;
-  padding-left: 12px;
-}
-
 .legend {
   display: flex;
   flex-wrap: wrap;
