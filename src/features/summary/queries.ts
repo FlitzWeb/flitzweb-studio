@@ -4,6 +4,7 @@ import { checks, db, events, reportNotes, type Tracker } from "@/db";
 import { addDays, addMonths, monthStart, todayISO } from "@/lib/dates";
 import { amsterdamMidnight, type Period } from "@/lib/analytics/periods";
 import { getBreakdowns, getPageviewSeries, getWebsiteStats } from "@/lib/analytics/queries";
+import { sinceFirstUp } from "@/lib/uptime/queries";
 
 const isMonth = (v: unknown): v is string => typeof v === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(v);
 
@@ -85,7 +86,7 @@ export async function getMonthSummary(siteId: number, trackers: Tracker[], month
         up: sql<number>`(count(*) filter (where ${checks.isUp}))::int`,
       })
       .from(checks)
-      .where(and(eq(checks.siteId, siteId), gte(checks.checkedAt, from), lt(checks.checkedAt, end))),
+      .where(and(eq(checks.siteId, siteId), gte(checks.checkedAt, from), lt(checks.checkedAt, end), sinceFirstUp)),
   ]);
 
   const byKey = new Map(goals.map((g) => [g.key, g]));

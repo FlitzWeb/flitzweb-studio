@@ -43,6 +43,13 @@ function rank(s: { monitored: boolean; isUp: boolean | null }) {
   return 2;
 }
 
+/**
+ * A site can only be "down" once it has been up. Checks before its first
+ * successful one (domain not pointed yet, still being built) are setup, not
+ * downtime, and would otherwise show up as 99,97% on a client's first report.
+ */
+export const sinceFirstUp = sql`${checks.checkedAt} >= (select min(c.checked_at) from checks c where c.site_id = ${checks.siteId} and c.is_up)`;
+
 /** Uptime percentage per site over the last `days` days. */
 export async function uptimeBySite(days: number, siteId?: number) {
   const rows = await db
@@ -54,6 +61,7 @@ export async function uptimeBySite(days: number, siteId?: number) {
     .where(
       and(
         gte(checks.checkedAt, new Date(Date.now() - days * DAY)),
+        sinceFirstUp,
         siteId ? eq(checks.siteId, siteId) : undefined,
       ),
     )
@@ -85,10 +93,16 @@ export type Incident = { start: Date; end: Date | null; error: string | null };
 
 /** Groups consecutive failed checks into incidents, newest first. */
 export async function getIncidents(siteId: number, days = 30) {
-  const rows = await recentChecks(siteId, days * 24);
+  const [rows, [first]] = await Promise.all([
+    recentChecks(siteId, days * 24),
+    db.select({ at: sql<Date | null>`min(${checks.checkedAt})`.mapWith((v) => (v ? new Date(v) : null)) }).from(checks).where(and(eq(checks.siteId, siteId), eq(checks.isUp, true))),
+  ]);
+  const firstUp = first?.at;
   const incidents: Incident[] = [];
   let open: Incident | null = null;
   for (const c of rows) {
+    // Failures before the site ever worked are setup, not incidents.
+    if (!firstUp || c.checkedAt < firstUp) continue;
     if (!c.isUp && !open) {
       open = { start: c.checkedAt, end: null, error: c.error };
       incidents.push(open);
