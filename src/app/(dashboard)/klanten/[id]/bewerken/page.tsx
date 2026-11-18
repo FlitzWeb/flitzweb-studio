@@ -6,10 +6,12 @@ import { deleteClient } from "@/features/clients/actions";
 import { ClientForm } from "@/features/clients/ClientForm";
 import { getClient } from "@/features/clients/queries";
 import styles from "@/components/form/form.module.css";
+import { requireSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Klant bewerken" };
 
 export default async function EditClientPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireSession(); // the real check (the proxy only redirects early)
   const id = Number((await params).id);
   const client = Number.isInteger(id) ? await getClient(id) : undefined;
   if (!client) notFound();

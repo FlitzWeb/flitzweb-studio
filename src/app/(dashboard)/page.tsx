@@ -15,10 +15,12 @@ import { addDays, formatDue, todayISO } from "@/lib/dates";
 import { formatDuration, formatEuro, formatRelative } from "@/lib/format";
 import { getSiteOverviews } from "@/lib/uptime/queries";
 import styles from "./overview.module.css";
+import { requireSession } from "@/lib/auth";
 
 const dayFmt = new Intl.DateTimeFormat("nl-NL", { timeZone: "Europe/Amsterdam", weekday: "long", day: "numeric", month: "long" });
 
 export default async function OverviewPage() {
+  await requireSession(); // the real check (the proxy only redirects early)
   const today = todayISO();
   const [sites, money, followUps, stages] = await Promise.all([
     getSiteOverviews(),

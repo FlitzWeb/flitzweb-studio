@@ -4,6 +4,7 @@ import { formParams, getMoneyFormOptions } from "@/features/money/formOptions";
 import { PaymentForm } from "@/features/money/PaymentForm";
 import { addDays, todayISO } from "@/lib/dates";
 import styles from "@/components/form/form.module.css";
+import { requireSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Nieuwe factuur" };
 
@@ -12,6 +13,7 @@ export default async function NewPaymentPage({
 }: {
   searchParams: Promise<{ klant?: string; terug?: string }>;
 }) {
+  await requireSession(); // the real check (the proxy only redirects early)
   const { clientId, returnTo } = formParams(await searchParams);
   const options = await getMoneyFormOptions();
   const today = todayISO();

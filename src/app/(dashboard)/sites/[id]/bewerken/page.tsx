@@ -7,10 +7,12 @@ import { deleteSite } from "@/features/sites/actions";
 import { SiteForm } from "@/features/sites/SiteForm";
 import { getSite } from "@/lib/sites";
 import styles from "@/components/form/form.module.css";
+import { requireSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Site bewerken" };
 
 export default async function EditSitePage({ params }: { params: Promise<{ id: string }> }) {
+  await requireSession(); // the real check (the proxy only redirects early)
   const id = Number((await params).id);
   const [site, clients] = await Promise.all([
     Number.isInteger(id) ? getSite(id) : undefined,

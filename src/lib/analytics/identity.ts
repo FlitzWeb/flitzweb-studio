@@ -3,14 +3,21 @@ import { createHash } from "node:crypto";
 import { jwtVerify, SignJWT } from "jose";
 
 // Anonymous visitor ("session") and visit ids, as in Umami's /api/send:
-//   sessionId = hash(site, ip, userAgent, monthly salt, distinct id, secret)
+//   sessionId = hash(site, ip, userAgent, monthly salt, secret)   (not the distinct id: see collect.ts)
 //   visitId   = hash(sessionId, start of the hour)   (without a cache token)
 // The tracker keeps a signed cache token in page memory (not in storage),
 // so events from one page view stay in the same visit for up to 30 minutes.
 
 const VISIT_MAX_SECONDS = 30 * 60;
 
-const secret = () => sha512(process.env.AUTH_SECRET ?? "", "analytics");
+// ANALYTICS_SECRET keeps the visitor ids and cache tokens apart from the login secret: a cache
+// token (which every visitor gets) is then no way to test guesses at AUTH_SECRET. Until it is
+// set, AUTH_SECRET is used as before (setting it later starts new visitor ids once).
+const secret = () => {
+  const base = process.env.ANALYTICS_SECRET || process.env.AUTH_SECRET || "";
+  if (base.length < 32) throw new Error("ANALYTICS_SECRET (or AUTH_SECRET) is missing or too short");
+  return sha512(base, "analytics");
+};
 
 function sha512(...parts: string[]) {
   return createHash("sha512").update(parts.join("")).digest("hex");
@@ -31,8 +38,8 @@ const startOfHour = (d: Date) => {
   return h.toISOString();
 };
 
-export const sessionIdFor = (siteId: number, ip: string, userAgent: string, at: Date, distinctId = "") =>
-  hashId(String(siteId), ip, userAgent, monthlySalt(at), distinctId);
+export const sessionIdFor = (siteId: number, ip: string, userAgent: string, at: Date) =>
+  hashId(String(siteId), ip, userAgent, monthlySalt(at), "");
 
 export type VisitCache = { sid: string; vid: string; iat: number };
 

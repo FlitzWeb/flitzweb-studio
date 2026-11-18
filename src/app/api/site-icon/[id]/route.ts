@@ -1,7 +1,6 @@
 import { eq } from "drizzle-orm";
-import { cookies } from "next/headers";
 import { db, sites } from "@/db";
-import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
+import { sessionEmail } from "@/lib/auth";
 import { getSiteIcon } from "@/lib/siteIcon";
 
 // A site's own favicon/logo, fetched from the site and proxied. Login required.
@@ -12,8 +11,7 @@ import { getSiteIcon } from "@/lib/siteIcon";
 const EMPTY_GIF = Buffer.from("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", "base64");
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const email = await verifySessionToken((await cookies()).get(SESSION_COOKIE)?.value);
-  if (!email || email !== process.env.ADMIN_EMAIL?.trim().toLowerCase()) {
+  if (!(await sessionEmail())) {
     return new Response(null, { status: 401 });
   }
   const id = Number((await params).id);

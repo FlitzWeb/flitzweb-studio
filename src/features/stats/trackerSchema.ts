@@ -10,6 +10,12 @@ export const trackerSchema = z.object({
     .regex(/^[a-z][a-z0-9_]{1,39}$/, "Alleen kleine letters, cijfers en _, bijv. order_placed")
     .refine((k) => k !== "pageview", "pageview wordt al automatisch gemeten"),
   aggregation: z.enum(["count", "sum"]),
+  // "server": only events sent with the site's secret (POST /api/ingest) count. Browser
+  // events can be sent by anyone who has the public key from the page source.
+  serverOnly: z
+    .enum(["all", "server"])
+    .default("all")
+    .transform((v) => v === "server"),
   monthlyGoal: z
     .string()
     .trim()

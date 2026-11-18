@@ -49,6 +49,18 @@ export function TrackerForm({ siteId, tracker }: { siteId: number; tracker?: Tra
             placeholder="100"
           />
         </div>
+        <Field
+          {...f}
+          as="select"
+          name="serverOnly"
+          label="Telt events van"
+          initial={tracker?.serverOnly ? "server" : "all"}
+          options={[
+            { value: "all", label: "Website en server" },
+            { value: "server", label: "Alleen de server (/api/ingest), niet te vervalsen" },
+          ]}
+          hint="Kies 'alleen de server' voor bestellingen en omzet: browser-events kan iedereen met de publieke key sturen."
+        />
       </section>
 
       <div className={styles.footer}>

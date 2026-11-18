@@ -1,5 +1,4 @@
 /* eslint-disable @next/next/no-img-element -- rendered to a PNG by next/og, not shown in a page */
-import { cookies } from "next/headers";
 import { ImageResponse } from "next/og";
 import { highlights } from "@/features/summary/message";
 import { hiddenParts } from "@/features/summary/parts";
@@ -10,7 +9,7 @@ import {
 } from "@/features/summary/queries";
 import { formatMonth } from "@/lib/dates";
 import { displayHost } from "@/lib/format";
-import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
+import { sessionEmail } from "@/lib/auth";
 import { getSite } from "@/lib/sites";
 
 // The monthly report as a picture (1080 × 1350, the tall format WhatsApp and
@@ -46,10 +45,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ siteId: string }> },
 ) {
-  const email = await verifySessionToken(
-    (await cookies()).get(SESSION_COOKIE)?.value,
-  );
-  if (!email || email !== process.env.ADMIN_EMAIL?.trim().toLowerCase()) {
+  if (!(await sessionEmail())) {
     return new Response(null, { status: 401 });
   }
   const id = Number((await params).siteId);

@@ -6,6 +6,7 @@ import { deleteTracker } from "@/features/stats/actions";
 import { TrackerForm } from "@/features/stats/TrackerForm";
 import { getSite } from "@/lib/sites";
 import styles from "@/components/form/form.module.css";
+import { requireSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Tracker bewerken" };
 
@@ -14,6 +15,7 @@ export default async function EditTrackerPage({
 }: {
   params: Promise<{ id: string; trackerId: string }>;
 }) {
+  await requireSession(); // the real check (the proxy only redirects early)
   const { id, trackerId } = await params;
   const site = Number.isInteger(Number(id)) ? await getSite(Number(id)) : undefined;
   const tracker = site?.trackers.find((t) => t.id === Number(trackerId));

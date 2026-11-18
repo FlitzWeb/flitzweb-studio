@@ -61,7 +61,7 @@ export async function EventsTab({ site, searchParams }: TabProps) {
               <span>Conversie</span>
             </div>
             {names.map((n) => {
-              const props = properties[n.name] ?? [];
+              const props = (Object.hasOwn(properties, n.name) ? properties[n.name] : undefined) ?? [];
               return (
                 <details key={n.name} className={styles.eventRow}>
                   <summary>

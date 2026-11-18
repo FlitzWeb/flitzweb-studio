@@ -10,10 +10,12 @@ import styles from "@/features/money/money.module.css";
 import { todayISO } from "@/lib/dates";
 import { formatDate, formatEuro } from "@/lib/format";
 import overview from "../overview.module.css";
+import { requireSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Kosten" };
 
 export default async function CostsPage() {
+  await requireSession(); // the real check (the proxy only redirects early)
   const o = await getCostsOverview();
   const year = todayISO().slice(0, 4);
 

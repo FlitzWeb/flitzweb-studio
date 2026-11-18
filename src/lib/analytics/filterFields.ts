@@ -37,7 +37,7 @@ export function parseFilters(searchParams: Record<string, string | string[] | un
   return list.flatMap((entry) => {
     const [field, op, ...rest] = entry.split(":");
     const value = rest.join(":");
-    if (!(field in FILTER_FIELDS) || !(op in OPERATORS) || !value) return [];
+    if (!Object.hasOwn(FILTER_FIELDS, field) || !Object.hasOwn(OPERATORS, op) || !value) return [];
     return [{ field: field as FilterField, op: op as Operator, value }];
   });
 }

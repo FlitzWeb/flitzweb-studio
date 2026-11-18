@@ -1,7 +1,7 @@
 import "server-only";
 import { eq, sql } from "drizzle-orm";
 import { db, sessions } from "@/db";
-import { flattenData, PAGEVIEW, recordEvent, type findSite } from "@/lib/events/record";
+import { flattenData, LIMITS, PAGEVIEW, recordEvent, trackerKeys, type findSite } from "@/lib/events/record";
 import { getClientInfo } from "./client";
 import { readCache, resolveVisit, sessionIdFor, writeCache } from "./identity";
 
@@ -23,6 +23,7 @@ export type CollectPayload = {
 };
 
 const UTM = ["source", "medium", "campaign", "content", "term"] as const;
+const SESSION_DATA_MAX = 50;
 const AD_CLICK_IDS = ["gclid", "fbclid", "msclkid", "ttclid", "li_fat_id", "twclid"];
 
 /**
@@ -40,10 +41,10 @@ export async function collect(
   const at = new Date();
   const screen = str(payload.screen, 20);
   const client = getClientInfo(request, screen ?? undefined);
-  // Like Umami, an identified visitor gets its own session, separate from
-  // anonymous visitors who happen to share the same IP and browser.
+  // The id from flitz.identify() is stored on the session but is not part of the session id:
+  // otherwise one browser could make any number of "visitors" by sending a new id each time.
   const distinctId = str(payload.id, 50);
-  const sessionId = sessionIdFor(site.id, client.ip, client.userAgent, at, distinctId ?? "");
+  const sessionId = sessionIdFor(site.id, client.ip, client.userAgent, at);
 
   const cache = await readCache(cacheToken);
   if (cache?.sid !== sessionId) {
@@ -70,13 +71,23 @@ export async function collect(
   const newCache = () => writeCache({ sid: sessionId, vid: visitId, iat });
 
   if (type === "identify") {
-    // Merge the new properties into the session's existing data.
-    const data = flattenData(payload.data);
+    // Merge the new properties into the session's existing data, keeping at most
+    // SESSION_DATA_MAX properties in all (new ones replace old ones with the same name).
+    const data = flattenData(payload.data, LIMITS.browser);
+    const keep = data ? Object.keys(data) : [];
     await db
       .update(sessions)
       .set({
-        distinctId,
-        ...(data && { data: sql`coalesce(${sessions.data}, '{}'::jsonb) || ${JSON.stringify(data)}::jsonb` }),
+        ...(distinctId && { distinctId }),
+        ...(data && {
+          data: sql`(
+            select coalesce(jsonb_object_agg(k, v), '{}'::jsonb) from (
+              select k, v from jsonb_each(coalesce(${sessions.data}, '{}'::jsonb)) as e(k, v)
+              where not (k = any(array[${sql.join(keep.map((k) => sql`${k}`), sql`, `)}]::text[]))
+              limit ${Math.max(0, SESSION_DATA_MAX - keep.length)}
+            ) old
+          ) || ${JSON.stringify(data)}::jsonb`,
+        }),
       })
       .where(eq(sessions.id, sessionId));
     return { stored: true, cache: await newCache() };
@@ -85,8 +96,15 @@ export async function collect(
   const url = parseUrl(payload.url);
   const hostname = str(payload.hostname, 200) ?? url?.hostname ?? null;
 
+  // Custom events from the browser are kept only when the site has a tracker for them:
+  // a stranger with the public key cannot fill the database with made-up event names.
+  const eventKey = typeof payload.name === "string" ? payload.name.trim().slice(0, 50) : PAGEVIEW;
+  if (eventKey !== PAGEVIEW && !(await trackerKeys(site.id)).has(eventKey)) {
+    return { stored: false, cache: await newCache() };
+  }
+
   const result = await recordEvent(site, {
-    eventKey: typeof payload.name === "string" ? payload.name : PAGEVIEW,
+    eventKey,
     value: payload.value,
     metadata: payload.data,
     path: url?.pathname,
@@ -99,7 +117,7 @@ export async function collect(
     utm: Object.fromEntries(UTM.map((k) => [k, url?.searchParams.get(`utm_${k}`) ?? null])),
     adClick: AD_CLICK_IDS.find((k) => url?.searchParams.has(k)) ?? null,
     occurredAt: at,
-  });
+  }, "browser");
 
   return { stored: result.stored, cache: await newCache() };
 }

@@ -8,10 +8,12 @@ import { deleteReport } from "@/features/reports/actions";
 import { ReportForm } from "@/features/reports/ReportForm";
 import { getStepSuggestions } from "@/lib/analytics/reports";
 import styles from "@/components/form/form.module.css";
+import { requireSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Rapport bewerken" };
 
 export default async function EditReportPage({ params }: { params: Promise<{ id: string; reportId: string }> }) {
+  await requireSession(); // the real check (the proxy only redirects early)
   const { id, reportId } = await params;
   const siteId = Number(id);
   const report = Number.isInteger(siteId) && Number.isInteger(Number(reportId))

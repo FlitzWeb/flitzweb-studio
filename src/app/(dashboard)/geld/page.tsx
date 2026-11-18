@@ -10,10 +10,12 @@ import styles from "@/features/money/money.module.css";
 import { formatMonth, todayISO } from "@/lib/dates";
 import { formatEuro } from "@/lib/format";
 import overview from "../overview.module.css";
+import { requireSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Geld" };
 
 export default async function MoneyPage() {
+  await requireSession(); // the real check (the proxy only redirects early)
   const [summary, subscriptions] = await Promise.all([
     getMoneySummary(),
     getSubscriptions({ current: true }),

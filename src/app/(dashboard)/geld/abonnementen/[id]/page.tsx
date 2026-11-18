@@ -8,6 +8,7 @@ import { deleteSubscription } from "@/features/money/actions";
 import { formParams, getMoneyFormOptions } from "@/features/money/formOptions";
 import { SubscriptionForm } from "@/features/money/SubscriptionForm";
 import styles from "@/components/form/form.module.css";
+import { requireSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Abonnement bewerken" };
 
@@ -18,6 +19,7 @@ export default async function EditSubscriptionPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ terug?: string }>;
 }) {
+  await requireSession(); // the real check (the proxy only redirects early)
   const id = Number((await params).id);
   const { returnTo } = formParams(await searchParams);
   const [subscription, options] = await Promise.all([

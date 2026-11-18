@@ -49,9 +49,10 @@ export async function getRealtimeData(siteId: number) {
 
   // Walk oldest → newest: the first event of a session also announces the visitor.
   const seen = new Set<string>();
-  const countries: Record<string, number> = {};
-  const pages: Record<string, number> = {};
-  const referrers: Record<string, number> = {};
+  // No prototype: a page called "/constructor" or a referrer "__proto__" is just a key.
+  const countries: Record<string, number> = Object.create(null);
+  const pages: Record<string, number> = Object.create(null);
+  const referrers: Record<string, number> = Object.create(null);
   const events: RealtimeEvent[] = [];
   for (const e of [...activity].reverse()) {
     if (!seen.has(e.sessionId)) {

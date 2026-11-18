@@ -9,10 +9,12 @@ import { CostForm } from "@/features/costs/CostForm";
 import { todayISO } from "@/lib/dates";
 import { displayHost } from "@/lib/format";
 import styles from "@/components/form/form.module.css";
+import { requireSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Kosten bewerken" };
 
 export default async function EditCostPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireSession(); // the real check (the proxy only redirects early)
   const id = Number((await params).id);
   const cost = Number.isInteger(id) ? await db.query.costs.findFirst({ where: eq(costs.id, id) }) : undefined;
   if (!cost) notFound();

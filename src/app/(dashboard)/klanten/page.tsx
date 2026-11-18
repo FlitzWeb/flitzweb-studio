@@ -8,10 +8,12 @@ import { billingLabels } from "@/features/clients/schema";
 import { StatusDot, statusOf } from "@/features/uptime/StatusDot";
 import styles from "@/features/clients/clients.module.css";
 import { SiteLogo } from "@/components/SiteLogo";
+import { requireSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Klanten" };
 
 export default async function ClientsPage() {
+  await requireSession(); // the real check (the proxy only redirects early)
   const clients = await getClients();
   const today = todayISO();
 

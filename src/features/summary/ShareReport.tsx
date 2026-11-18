@@ -19,8 +19,9 @@ function canCopyImages() {
 }
 
 async function loadPng(url: string) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(String(res.status));
+  const res = await fetch(url, { redirect: "error" });
+  // Only a real picture is passed on: never a login page or an error page labelled as one.
+  if (!res.ok || !res.headers.get("content-type")?.startsWith("image/png")) throw new Error(String(res.status));
   return new Blob([await res.blob()], { type: "image/png" });
 }
 

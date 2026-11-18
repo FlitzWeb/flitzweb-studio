@@ -27,7 +27,7 @@ export const PERIODS = {
 } as const;
 export type PeriodKey = keyof typeof PERIODS;
 
-export const isPeriodKey = (k: unknown): k is PeriodKey => typeof k === "string" && k in PERIODS;
+export const isPeriodKey = (k: unknown): k is PeriodKey => typeof k === "string" && Object.hasOwn(PERIODS, k);
 
 /** Midnight at the start of an Amsterdam calendar day, as a real instant. */
 export function amsterdamMidnight(iso: string) {
@@ -76,6 +76,9 @@ export function getPeriod(key: PeriodKey = "7d", filters: Filter[] = [], now = n
       unit = "month";
       break;
     }
+    default:
+      // Never reached with a checked key (isPeriodKey); a safe default otherwise.
+      from = amsterdamMidnight(addDays(today, -29));
   }
 
   const length = now.getTime() - from.getTime();

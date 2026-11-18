@@ -1,5 +1,6 @@
+import { takeQuota } from "@/lib/events/quota";
 import { findSite, recordEvent } from "@/lib/events/record";
-import { rateLimited } from "@/lib/events/rateLimit";
+import { clientIp, ipKey, rateLimited } from "@/lib/events/rateLimit";
 
 // Server-to-server events, e.g. from a booking API:
 //   POST /api/ingest
@@ -8,6 +9,10 @@ import { rateLimited } from "@/lib/events/rateLimit";
 // "at" is optional (default: now) and may be up to 7 days in the past.
 
 export async function POST(request: Request) {
+  // Per caller first, before the secret is looked up (no guessing at secrets at full speed).
+  if (rateLimited(`ingest-ip:${ipKey(clientIp(request))}`, 600)) {
+    return Response.json({ error: "rate limited" }, { status: 429 });
+  }
   const secret = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
   const site = secret ? await findSite({ ingestSecret: secret }) : null;
   if (!site) return Response.json({ error: "unauthorized" }, { status: 401 });
@@ -15,11 +20,17 @@ export async function POST(request: Request) {
     return Response.json({ error: "rate limited" }, { status: 429 });
   }
 
-  let body: { event?: unknown; value?: unknown; meta?: unknown; at?: unknown };
+  let body: { event?: unknown; value?: unknown; meta?: unknown; at?: unknown } | null;
   try {
     body = await request.json();
   } catch {
     return Response.json({ error: "invalid JSON" }, { status: 400 });
+  }
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return Response.json({ error: "send a JSON object" }, { status: 400 });
+  }
+  if (!(await takeQuota(site.id))) {
+    return Response.json({ error: "daily event limit reached" }, { status: 429 });
   }
 
   let occurredAt: Date | undefined;
@@ -36,7 +47,7 @@ export async function POST(request: Request) {
     value: body.value,
     metadata: body.meta,
     occurredAt,
-  });
+  }, "server");
   return result.stored
     ? Response.json({ ok: true }, { status: 202 })
     : Response.json({ ok: false, error: result.reason }, { status: 400 });

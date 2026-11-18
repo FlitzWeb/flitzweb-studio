@@ -4,6 +4,7 @@ import { formParams, getMoneyFormOptions } from "@/features/money/formOptions";
 import { SubscriptionForm } from "@/features/money/SubscriptionForm";
 import { todayISO } from "@/lib/dates";
 import styles from "@/components/form/form.module.css";
+import { requireSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Nieuw abonnement" };
 
@@ -12,6 +13,7 @@ export default async function NewSubscriptionPage({
 }: {
   searchParams: Promise<{ klant?: string; terug?: string }>;
 }) {
+  await requireSession(); // the real check (the proxy only redirects early)
   const { clientId, returnTo } = formParams(await searchParams);
   const options = await getMoneyFormOptions();
 

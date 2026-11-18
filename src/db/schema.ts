@@ -11,6 +11,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -177,9 +178,30 @@ export const trackers = pgTable(
     eventKey: text("event_key").notNull(),
     aggregation: aggregation().notNull().default("count"),
     monthlyGoal: integer("monthly_goal"),
+    // Count only events from the site's server (POST /api/ingest), never from the browser
+    // tracker: anyone can send browser events with the site's public key, so numbers that
+    // matter (orders, revenue) should come from the server.
+    serverOnly: boolean("server_only").notNull().default(false),
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex("trackers_site_key_idx").on(t.siteId, t.eventKey)],
+);
+
+/**
+ * Events stored per site per day (UTC), so one site's public key cannot fill the database:
+ * past the daily limit new events are dropped. Also used for the spike warning.
+ */
+export const siteUsage = pgTable(
+  "site_usage",
+  {
+    siteId: integer("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    day: date().notNull(),
+    events: integer().notNull().default(0),
+    spikeAlertSent: boolean("spike_alert_sent").notNull().default(false),
+  },
+  (t) => [primaryKey({ columns: [t.siteId, t.day] })],
 );
 
 // ---------------------------------------------------------------------------
@@ -398,6 +420,15 @@ export const costs = pgTable("costs", {
 // ---------------------------------------------------------------------------
 // Auth: one-time magic-link tokens (only the SHA-256 hash is stored)
 // ---------------------------------------------------------------------------
+
+/**
+ * Login state that is not in a cookie. One row (id 1). Sessions issued before
+ * `sessionsValidAfter` are refused: "Overal uitloggen" moves it to now.
+ */
+export const authState = pgTable("auth_state", {
+  id: integer().primaryKey().default(1),
+  sessionsValidAfter: timestamp("sessions_valid_after", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const loginTokens = pgTable("login_tokens", {
   tokenHash: text("token_hash").primaryKey(),

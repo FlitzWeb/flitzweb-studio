@@ -3,6 +3,7 @@ import { and, count, desc, eq, gte, sql } from "drizzle-orm";
 import { db, events, type Tracker } from "@/db";
 import { PAGEVIEW } from "@/lib/events/record";
 import { addDays, monthStart, todayISO } from "@/lib/dates";
+import { countedEvents } from "./source";
 
 const DAY = sql<string>`to_char(${events.occurredAt} at time zone 'Europe/Amsterdam', 'YYYY-MM-DD')`;
 
@@ -42,6 +43,7 @@ export async function getSiteStats(siteId: number, trackers: Tracker[]) {
         eq(events.siteId, siteId),
         // A day of slack; exact Amsterdam days are filtered by `day` below.
         gte(events.occurredAt, new Date(`${addDays(from, -1)}T00:00:00Z`)),
+        countedEvents(trackers),
       ),
     )
     .groupBy(events.eventKey, DAY);

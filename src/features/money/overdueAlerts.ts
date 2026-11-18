@@ -1,7 +1,7 @@
 import "server-only";
 import { inArray } from "drizzle-orm";
 import { db, payments, subscriptionCharges } from "@/db";
-import { alertEmail, appUrl, sendEmail } from "@/lib/email";
+import { alertEmail, appUrl, sendAlert } from "@/lib/email";
 import { formatDate, formatEuro } from "@/lib/format";
 import { getMoneyItems } from "./queries";
 
@@ -18,7 +18,7 @@ export async function sendOverdueAlerts() {
   const total = overdue.reduce((t, i) => t + i.amountCents, 0);
   const line = (i: (typeof fresh)[number]) =>
     `- ${i.clientName}: ${formatEuro(i.amountCents)} voor ${i.description} (vervallen ${formatDate(i.dueDate)})`;
-  await sendEmail({
+  await sendAlert({
     to: alertEmail(),
     subject:
       fresh.length === 1

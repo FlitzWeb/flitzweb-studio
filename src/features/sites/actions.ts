@@ -53,3 +53,23 @@ export async function deleteSite(id: number) {
   revalidatePath("/", "layout");
   redirect(deleted ? `/klanten/${deleted.clientId}` : "/");
 }
+
+/**
+ * New secret for /api/ingest (when the old one may have leaked). The site's server must get
+ * the new one: events sent with the old secret are refused from now on.
+ */
+export async function rotateIngestSecret(id: number) {
+  await requireSession();
+  await db.update(sites).set({ ingestSecret: newIngestSecret() }).where(eq(sites.id, id));
+  revalidatePath(`/sites/${id}`, "layout");
+}
+
+/**
+ * New public key for t.js (when someone sends fake browser events with it). The script tag
+ * on the site must be updated: events with the old key are refused from now on.
+ */
+export async function rotatePublicKey(id: number) {
+  await requireSession();
+  await db.update(sites).set({ publicKey: newPublicKey() }).where(eq(sites.id, id));
+  revalidatePath(`/sites/${id}`, "layout");
+}

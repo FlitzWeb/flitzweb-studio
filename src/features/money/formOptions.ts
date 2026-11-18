@@ -1,4 +1,5 @@
 import "server-only";
+import { safeReturnPath } from "@/lib/safePath";
 import { getPayingClientOptions, getSiteOptions } from "./queries";
 import type { MoneyFormOptions } from "./SubscriptionForm";
 
@@ -10,6 +11,5 @@ export async function getMoneyFormOptions(): Promise<MoneyFormOptions> {
 /** Reads ?klant= and ?terug= from a form page URL. */
 export function formParams(params: { klant?: string; terug?: string }) {
   const clientId = Number(params.klant) || undefined;
-  const to = params.terug ?? "";
-  return { clientId, returnTo: to.startsWith("/") && !to.startsWith("//") ? to : "/geld" };
+  return { clientId, returnTo: safeReturnPath(params.terug, "/geld") };
 }

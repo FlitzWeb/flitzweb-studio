@@ -15,6 +15,7 @@ import { SiteCard } from "@/features/uptime/SiteCard";
 import { getSiteOverviews } from "@/lib/uptime/queries";
 import styles from "@/features/clients/clients.module.css";
 import overview from "../../overview.module.css";
+import { requireSession } from "@/lib/auth";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -30,6 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ClientPage({ params }: Props) {
+  await requireSession(); // the real check (the proxy only redirects early)
   const client = await load(params);
   const sites = (await getSiteOverviews()).filter(
     (s) => s.clientId === client.id,

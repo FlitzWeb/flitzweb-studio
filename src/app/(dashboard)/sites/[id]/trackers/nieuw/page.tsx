@@ -4,10 +4,12 @@ import { notFound } from "next/navigation";
 import { TrackerForm } from "@/features/stats/TrackerForm";
 import { getSite } from "@/lib/sites";
 import styles from "@/components/form/form.module.css";
+import { requireSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Nieuwe tracker" };
 
 export default async function NewTrackerPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireSession(); // the real check (the proxy only redirects early)
   const id = Number((await params).id);
   const site = Number.isInteger(id) ? await getSite(id) : undefined;
   if (!site) notFound();

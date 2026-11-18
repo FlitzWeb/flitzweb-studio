@@ -1,5 +1,5 @@
 import { asc, eq } from "drizzle-orm";
-import { LogOut } from "lucide-react";
+import { LogOut, ShieldX } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -7,7 +7,7 @@ import { clients, db, sites } from "@/db";
 import { statusOf } from "@/features/uptime/StatusDot";
 import { requireSession } from "@/lib/auth";
 import { displayHost } from "@/lib/format";
-import { signOut } from "../login/actions";
+import { signOut, signOutEverywhere } from "../login/actions";
 import { CommandPalette, SearchField } from "./CommandPalette";
 import { SidebarNav, TabBar } from "./NavLinks";
 import styles from "./shell.module.css";
@@ -55,6 +55,16 @@ export default async function DashboardLayout({
           <form action={signOut}>
             <button className={styles.iconBtn} type="submit" aria-label="Uitloggen" title="Uitloggen">
               <LogOut aria-hidden="true" />
+            </button>
+          </form>
+          <form action={signOutEverywhere}>
+            <button
+              className={styles.iconBtn}
+              type="submit"
+              aria-label="Overal uitloggen (alle apparaten)"
+              title="Overal uitloggen (alle apparaten)"
+            >
+              <ShieldX aria-hidden="true" />
             </button>
           </form>
         </div>

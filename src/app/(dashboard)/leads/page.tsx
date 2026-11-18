@@ -7,12 +7,14 @@ import { StageSelect } from "@/features/clients/StageSelect";
 import { contactKindLabels, isStage, OPEN_STAGES, stageLabels, type Stage } from "@/features/clients/stages";
 import styles from "@/features/clients/clients.module.css";
 import { formatAgo, formatDue, todayISO } from "@/lib/dates";
+import { requireSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Leads" };
 
 const FILTERS: Stage[] = [...OPEN_STAGES, "lost"];
 
 export default async function LeadsPage({ searchParams }: { searchParams: Promise<{ fase?: string }> }) {
+  await requireSession(); // the real check (the proxy only redirects early)
   const { fase } = await searchParams;
   const active = isStage(fase) && FILTERS.includes(fase) ? fase : null;
   const [leads, counts] = await Promise.all([getLeads(active ? [active] : OPEN_STAGES), getStageCounts()]);

@@ -1,7 +1,7 @@
 import "server-only";
 import { and, eq, inArray, lt } from "drizzle-orm";
 import { checks, db, sites, type Site } from "@/db";
-import { alertEmail, appUrl, sendEmail } from "@/lib/email";
+import { alertEmail, appUrl, sendAlert } from "@/lib/email";
 import { daysUntil, formatDate, formatDateTime, formatDuration } from "@/lib/format";
 import { probe, type ProbeResult } from "./probe";
 
@@ -56,7 +56,7 @@ async function applyStateChange(site: Site, result: ProbeResult) {
 
   try {
     if (!result.isUp && site.isUp !== false) {
-      await sendEmail({
+      await sendAlert({
         to: alertEmail(),
         subject: `🔴 ${site.name} ligt eruit`,
         text: `${site.name} (${site.url}) reageert niet sinds ${formatDateTime(now)}.\n\nFout: ${result.error ?? "onbekend"}\n\n${link}`,
@@ -68,7 +68,7 @@ async function applyStateChange(site: Site, result: ProbeResult) {
         const downFor = site.downSince
           ? ` na ${formatDuration(now.getTime() - site.downSince.getTime())}`
           : "";
-        await sendEmail({
+        await sendAlert({
           to: alertEmail(),
           subject: `🟢 ${site.name} is weer online`,
           text: `${site.name} (${site.url}) is weer bereikbaar${downFor}.\n\n${link}`,
@@ -81,7 +81,7 @@ async function applyStateChange(site: Site, result: ProbeResult) {
     if (result.sslExpiresAt) {
       const days = daysUntil(result.sslExpiresAt, now);
       if (days < SSL_WARN_DAYS && !site.sslAlertSent) {
-        await sendEmail({
+        await sendAlert({
           to: alertEmail(),
           subject:
             days < 0

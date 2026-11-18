@@ -69,7 +69,8 @@ export async function getSessionProperties(siteId: number, p: Period) {
 }
 
 function groupProperties(rows: { group: string; key: string; value: string; count: number }[]) {
-  const out: Record<string, PropertyValues[]> = {};
+  // No prototype: an event called "constructor" or "__proto__" is just another name.
+  const out: Record<string, PropertyValues[]> = Object.create(null);
   for (const r of rows) {
     const props = (out[r.group] ??= []);
     let prop = props.find((x) => x.key === r.key);

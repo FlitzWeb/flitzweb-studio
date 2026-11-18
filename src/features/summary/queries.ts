@@ -5,6 +5,7 @@ import { addDays, addMonths, monthStart, todayISO } from "@/lib/dates";
 import { amsterdamMidnight, type Period } from "@/lib/analytics/periods";
 import { getBreakdowns, getPageviewSeries, getWebsiteStats } from "@/lib/analytics/queries";
 import { sinceFirstUp } from "@/lib/uptime/queries";
+import { countedEvents } from "@/features/stats/source";
 import { goalKey } from "./message";
 import { friendlySources } from "./sources";
 
@@ -39,6 +40,7 @@ export async function getMonthSummary(siteId: number, trackers: Tracker[], month
 
   // The chart follows one result (e.g. calls) when the site picked a tracker, otherwise visitors.
   const chartTracker = trackers.find((t) => t.eventKey === chartEvent) ?? null;
+  const counted = countedEvents(trackers);
   const day = sql<string>`to_char(${events.occurredAt} at time zone 'Europe/Amsterdam', 'YYYY-MM-DD')`;
 
   const [stats, breakdowns, series, goals, prevGoals, perDay, uptime, [firstEvent]] = await Promise.all([
@@ -52,7 +54,7 @@ export async function getMonthSummary(siteId: number, trackers: Tracker[], month
         sum: sql<number>`coalesce(sum(${events.value}), 0)`.mapWith(Number),
       })
       .from(events)
-      .where(and(eq(events.siteId, siteId), gte(events.occurredAt, from), lt(events.occurredAt, end)))
+      .where(and(eq(events.siteId, siteId), gte(events.occurredAt, from), lt(events.occurredAt, end), counted))
       .groupBy(events.eventKey),
     // The same totals for the month before, to say whether a result went up or down.
     db
@@ -62,7 +64,7 @@ export async function getMonthSummary(siteId: number, trackers: Tracker[], month
         sum: sql<number>`coalesce(sum(${events.value}), 0)`.mapWith(Number),
       })
       .from(events)
-      .where(and(eq(events.siteId, siteId), gte(events.occurredAt, prevFrom), lt(events.occurredAt, from)))
+      .where(and(eq(events.siteId, siteId), gte(events.occurredAt, prevFrom), lt(events.occurredAt, from), counted))
       .groupBy(events.eventKey),
     chartTracker
       ? db
@@ -78,6 +80,7 @@ export async function getMonthSummary(siteId: number, trackers: Tracker[], month
               eq(events.eventKey, chartTracker.eventKey),
               gte(events.occurredAt, from),
               lt(events.occurredAt, end),
+              counted,
             ),
           )
           .groupBy(day)

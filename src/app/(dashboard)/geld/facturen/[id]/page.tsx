@@ -8,6 +8,7 @@ import { deletePayment } from "@/features/money/actions";
 import { formParams, getMoneyFormOptions } from "@/features/money/formOptions";
 import { PaymentForm } from "@/features/money/PaymentForm";
 import styles from "@/components/form/form.module.css";
+import { requireSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Factuur bewerken" };
 
@@ -18,6 +19,7 @@ export default async function EditPaymentPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ terug?: string }>;
 }) {
+  await requireSession(); // the real check (the proxy only redirects early)
   const id = Number((await params).id);
   const { returnTo } = formParams(await searchParams);
   const [payment, options] = await Promise.all([

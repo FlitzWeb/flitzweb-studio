@@ -5,10 +5,12 @@ import { ReportForm } from "@/features/reports/ReportForm";
 import { getStepSuggestions } from "@/lib/analytics/reports";
 import { getSite } from "@/lib/sites";
 import styles from "@/components/form/form.module.css";
+import { requireSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Nieuw rapport" };
 
 export default async function NewReportPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireSession(); // the real check (the proxy only redirects early)
   const id = Number((await params).id);
   const site = Number.isInteger(id) ? await getSite(id) : undefined;
   if (!site) notFound();

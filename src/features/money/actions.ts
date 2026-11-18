@@ -7,13 +7,11 @@ import { db, payments, sites, subscriptionCharges, subscriptions } from "@/db";
 import { requireSession } from "@/lib/auth";
 import { todayISO } from "@/lib/dates";
 import { parseForm, type FormState } from "@/lib/forms";
+import { safeReturnPath } from "@/lib/safePath";
 import { paymentSchema, subscriptionSchema } from "./schema";
 
 /** Where to go after saving: a hidden "returnTo" field, or /geld. */
-const returnTo = (formData: FormData) => {
-  const to = String(formData.get("returnTo") ?? "");
-  return to.startsWith("/") && !to.startsWith("//") ? to : "/geld";
-};
+const returnTo = (formData: FormData) => safeReturnPath(formData.get("returnTo"), "/geld");
 
 /** The chosen site must belong to the chosen client. */
 async function siteMismatch(clientId: number, siteId: number | null, values: Record<string, string>) {

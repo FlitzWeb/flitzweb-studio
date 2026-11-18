@@ -11,6 +11,7 @@ import { displayHost } from "@/lib/format";
 import { getSite } from "@/lib/sites";
 import styles from "./site.module.css";
 import { SiteLogo } from "@/components/SiteLogo";
+import { requireSession } from "@/lib/auth";
 
 type Props = {
   params: Promise<{ id: string; tab?: string[] }>;
@@ -34,6 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function SitePage({ params, searchParams }: Props) {
+  await requireSession(); // the real check (the proxy only redirects early)
   const { site, tabs, active } = await load(params);
   const Tab = active.component;
   const status = statusOf({ monitored: site.status === "live", isUp: site.isUp });

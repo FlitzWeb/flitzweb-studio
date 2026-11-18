@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getClientOptions } from "@/features/clients/queries";
 import { SiteForm } from "@/features/sites/SiteForm";
 import styles from "@/components/form/form.module.css";
+import { requireSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Nieuwe site" };
 
@@ -11,6 +12,7 @@ export default async function NewSitePage({
 }: {
   searchParams: Promise<{ klant?: string }>;
 }) {
+  await requireSession(); // the real check (the proxy only redirects early)
   const clientId = Number((await searchParams).klant) || undefined;
   const clients = await getClientOptions();
 
