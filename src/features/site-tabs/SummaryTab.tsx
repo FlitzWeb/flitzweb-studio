@@ -6,7 +6,7 @@ import { StatTile, StatTiles } from "@/components/StatTile";
 import { messageLink } from "@/features/clients/messageLink";
 import { saveReportNote, saveReportParts } from "@/features/summary/actions";
 import { hiddenParts, REPORT_PARTS } from "@/features/summary/parts";
-import { DONE_MAX, highlights, summaryMessage } from "@/features/summary/message";
+import { DONE_MAX, FIXED_HIGHLIGHTS, goalKey, highlights, summaryMessage } from "@/features/summary/message";
 import { getMonthSummary, getReportNote, summaryMonth } from "@/features/summary/queries";
 import { formatDate } from "@/lib/format";
 import { ShareReport } from "@/features/summary/ShareReport";
@@ -23,8 +23,9 @@ export async function SummaryTab({ site, searchParams }: TabProps) {
   const base = `/sites/${site.id}/maandrapport`;
   const ym = month.slice(0, 7);
   const hidden = hiddenParts(site.reportHidden);
-  // `v` changes when the saved line or the chosen parts change, so the browser fetches the new picture.
-  const imageUrl = `/api/report-image/${site.id}?maand=${ym}&v=${note ? note.updatedAt.getTime() : 0}-${[...hidden].join(".")}-${site.reportChartEvent ?? ""}`;
+  // Changes when the saved line or the report's settings change, so the browser fetches the new picture and the form shows what was saved.
+  const settings = `${[...hidden].join(".")}-${site.reportChartEvent ?? ""}-${site.reportLead ?? ""}`;
+  const imageUrl = `/api/report-image/${site.id}?maand=${ym}&v=${encodeURIComponent(`${note ? note.updatedAt.getTime() : 0}-${settings}`)}`;
   const slug = site.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "site";
   const empty = summary.stats.current.views === 0 && summary.uptimePct == null;
 
@@ -57,8 +58,8 @@ export async function SummaryTab({ site, searchParams }: TabProps) {
         </div>
         <div className={styles.tilesWrap}>
           <StatTiles>
-            {highlights(summary, new Set()).map((h) => (
-              <StatTile key={h.label} label={h.label} value={h.value} hint={h.note} />
+            {highlights(summary, new Set(), site.reportLead).map((h) => (
+              <StatTile key={h.key} label={h.label} value={h.value} hint={h.note} />
             ))}
           </StatTiles>
         </div>
@@ -103,7 +104,7 @@ export async function SummaryTab({ site, searchParams }: TabProps) {
             <section className={styles.panel}>
               <h2 className={styles.h2}>Wat staat erop?</h2>
               <p className={styles.muted}>Geldt voor elk maandrapport van {site.name}. Er passen maximaal vier grote cijfers op.</p>
-              <form action={saveReportParts.bind(null, site.id)} className={styles.doneForm} key={`${[...hidden].join(".")}-${site.reportChartEvent ?? ""}`}>
+              <form action={saveReportParts.bind(null, site.id)} className={styles.doneForm} key={settings}>
                 <div className={styles.parts}>
                   {REPORT_PARTS.map((p) => (
                     <label key={p.key} className={styles.part}>
@@ -114,6 +115,25 @@ export async function SummaryTab({ site, searchParams }: TabProps) {
                       </span>
                     </label>
                   ))}
+                </div>
+                <div className="field">
+                  <label className="label" htmlFor="report-lead">
+                    Belangrijkste cijfer
+                  </label>
+                  <select id="report-lead" name="lead" className="input" defaultValue={site.reportLead ?? ""}>
+                    <option value="">Automatisch (het eerste cijfer)</option>
+                    {site.trackers.map((t) => (
+                      <option key={t.id} value={goalKey(t.eventKey)}>
+                        {t.name}
+                      </option>
+                    ))}
+                    {FIXED_HIGHLIGHTS.map((h) => (
+                      <option key={h.key} value={h.key}>
+                        {h.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="label">Dit cijfer staat vooraan en krijgt het blauwe vak.</span>
                 </div>
                 {site.trackers.length > 0 && (
                   <div className="field">

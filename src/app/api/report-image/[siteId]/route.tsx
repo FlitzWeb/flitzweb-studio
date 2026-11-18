@@ -67,7 +67,7 @@ export async function GET(
   const hidden = hiddenParts(site.reportHidden);
   const showPages = !hidden.has("pages") && summary.pages.length > 1;
   const showSources = !hidden.has("sources");
-  const tiles = highlights(summary, hidden);
+  const tiles = highlights(summary, hidden, site.reportLead);
   const { chart } = summary;
   const maxDay = Math.max(...chart.days.map((d) => d.value), 1);
   const peak = chart.days.find((d) => d.value === maxDay && d.value > 0);

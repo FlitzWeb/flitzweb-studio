@@ -5,6 +5,7 @@ import { addDays, addMonths, monthStart, todayISO } from "@/lib/dates";
 import { amsterdamMidnight, type Period } from "@/lib/analytics/periods";
 import { getBreakdowns, getPageviewSeries, getWebsiteStats } from "@/lib/analytics/queries";
 import { sinceFirstUp } from "@/lib/uptime/queries";
+import { goalKey } from "./message";
 import { friendlySources } from "./sources";
 
 const isMonth = (v: unknown): v is string => typeof v === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(v);
@@ -120,6 +121,7 @@ export async function getMonthSummary(siteId: number, trackers: Tracker[], month
     pages: breakdowns.pages.filter((p) => !LEGAL_PAGE.test(p.label)).slice(0, 5),
     referrers: friendlySources(breakdowns.referrers).slice(0, 5),
     goals: trackers.map((t) => ({
+      key: goalKey(t.eventKey),
       name: t.name,
       aggregation: t.aggregation,
       value: total(t, byKey.get(t.eventKey)),

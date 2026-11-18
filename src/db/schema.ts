@@ -120,6 +120,9 @@ export const sites = pgTable(
     reportHidden: jsonb("report_hidden").$type<string[]>().notNull().default([]),
     // What the report's per-day chart counts: a tracker's event key, or null for visitors.
     reportChartEvent: text("report_chart_event"),
+    // The number the report leads with (first, in the blue tile): a highlight key
+    // from features/summary/message.ts, or null for the default order.
+    reportLead: text("report_lead"),
 
     // Versions: `main` on GitHub is the live site, `conceptBranch` is the version
     // being worked on, which the host builds at `conceptUrl`. See features/versions.
