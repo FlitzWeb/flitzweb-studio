@@ -162,11 +162,11 @@ export async function SummaryTab({ site, searchParams }: TabProps) {
             <section className={styles.panel}>
               <h2 className={styles.h2}>Versturen</h2>
               <p className={styles.muted}>
-                Op je telefoon stuurt “Deel afbeelding” het rapport direct door naar WhatsApp. Op de computer download je het en
-                voeg je het zelf toe.
+                Op je telefoon stuurt “Deel afbeelding” het rapport direct door naar WhatsApp. Op de computer kopieer je de
+                afbeelding en plak je hem in de chat. Het bericht hieronder stuur je er los bij.
               </p>
               <div className={styles.sendTools}>
-                <ShareReport imageUrl={imageUrl} fileName={`maandoverzicht-${slug}-${ym}.png`} message={message} />
+                <ShareReport imageUrl={imageUrl} fileName={`maandoverzicht-${slug}-${ym}.png`} />
               </div>
               <pre className={styles.message}>{message}</pre>
               <div className={styles.sendTools}>
