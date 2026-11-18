@@ -81,6 +81,16 @@ export function stageFromStatus(status: string): Stage {
 
 const clean = (v: string | undefined) => v?.trim().replace(/\s+\n/g, "\n") || null;
 
+// The sheet says "Geen", "-" or "onbekend" where there is no number or address.
+const cleanPhone = (v: string | undefined) => {
+  const s = clean(v);
+  return s && /\d/.test(s) ? s : null;
+};
+const cleanEmail = (v: string | undefined) => {
+  const s = clean(v);
+  return s && s.includes("@") ? s : null;
+};
+
 export function parseLeadSheet(text: string): { rows: ImportRow[]; columns: Field[]; hadHeader: boolean } {
   const firstLine = text.split(/\r?\n/, 1)[0] ?? "";
   const delimiter = firstLine.includes("\t") ? "\t" : firstLine.includes(";") ? ";" : ",";
@@ -117,8 +127,8 @@ export function parseLeadSheet(text: string): { rows: ImportRow[]; columns: Fiel
       industry: clean(get("industry")),
       address: clean(get("address")),
       contactPerson: clean(get("contactPerson")),
-      phone: clean(get("phone")),
-      email: clean(get("email")),
+      phone: cleanPhone(get("phone")),
+      email: cleanEmail(get("email")),
       websiteStatus: clean(get("websiteStatus")),
       stage: stageFromStatus(status ?? ""),
       notes: notes || null,
