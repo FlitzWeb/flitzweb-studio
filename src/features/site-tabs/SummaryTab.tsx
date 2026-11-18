@@ -35,7 +35,11 @@ export async function SummaryTab({ site, searchParams }: TabProps) {
           <div>
             <h2 className={`${styles.h2} ${styles.monthTitle}`}>{formatMonth(month)}</h2>
             <p className={styles.muted}>
-              {isCurrent ? "Deze maand loopt nog: de cijfers zijn tot nu toe." : "Hele maand, vergeleken met de maand ervoor."}
+              {isCurrent
+                ? "Deze maand loopt nog: de cijfers zijn tot nu toe, zonder vergelijking."
+                : summary.comparable
+                  ? "Hele maand, vergeleken met de maand ervoor."
+                  : "Hele maand. Geen vergelijking: de maand ervoor is niet volledig gemeten."}
             </p>
           </div>
           <div className={styles.monthNav}>

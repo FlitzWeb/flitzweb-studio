@@ -5,6 +5,7 @@ import { addDays, addMonths, monthStart, todayISO } from "@/lib/dates";
 import { amsterdamMidnight, type Period } from "@/lib/analytics/periods";
 import { getBreakdowns, getPageviewSeries, getWebsiteStats } from "@/lib/analytics/queries";
 import { sinceFirstUp } from "@/lib/uptime/queries";
+import { friendlySources } from "./sources";
 
 const isMonth = (v: unknown): v is string => typeof v === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(v);
 
@@ -39,7 +40,7 @@ export async function getMonthSummary(siteId: number, trackers: Tracker[], month
   const chartTracker = trackers.find((t) => t.eventKey === chartEvent) ?? null;
   const day = sql<string>`to_char(${events.occurredAt} at time zone 'Europe/Amsterdam', 'YYYY-MM-DD')`;
 
-  const [stats, breakdowns, series, goals, prevGoals, perDay, uptime] = await Promise.all([
+  const [stats, breakdowns, series, goals, prevGoals, perDay, uptime, [firstEvent]] = await Promise.all([
     getWebsiteStats(siteId, period),
     getBreakdowns(siteId, period),
     getPageviewSeries(siteId, period),
@@ -87,7 +88,14 @@ export async function getMonthSummary(siteId: number, trackers: Tracker[], month
       })
       .from(checks)
       .where(and(eq(checks.siteId, siteId), gte(checks.checkedAt, from), lt(checks.checkedAt, end), sinceFirstUp)),
+    db.select({ at: sql<string | null>`min(${events.occurredAt})` }).from(events).where(eq(events.siteId, siteId)),
   ]);
+
+  // "+228% t.o.v. de maand ervoor" is only true when both months were measured
+  // in full: not while this month is still running, and not when tracking
+  // started somewhere in the month before.
+  const trackedSince = firstEvent?.at ? new Date(firstEvent.at) : null;
+  const comparable = end.getTime() <= Date.now() && trackedSince != null && trackedSince.getTime() < prevFrom.getTime() + 86400000;
 
   const byKey = new Map(goals.map((g) => [g.key, g]));
   const prevByKey = new Map(prevGoals.map((g) => [g.key, g]));
@@ -104,11 +112,13 @@ export async function getMonthSummary(siteId: number, trackers: Tracker[], month
 
   return {
     stats,
+    /** Whether the month before is a fair comparison (see above). */
+    comparable,
     /** The per-day chart: what it counts and the value for every day of the month. */
     chart: { label: chartTracker?.name ?? "Bezoekers", isMoney: chartTracker?.aggregation === "sum", days },
     // Legal pages say nothing about the business, and a "top pages" list of one is no list.
     pages: breakdowns.pages.filter((p) => !LEGAL_PAGE.test(p.label)).slice(0, 5),
-    referrers: breakdowns.referrers.slice(0, 5),
+    referrers: friendlySources(breakdowns.referrers).slice(0, 5),
     goals: trackers.map((t) => ({
       name: t.name,
       aggregation: t.aggregation,

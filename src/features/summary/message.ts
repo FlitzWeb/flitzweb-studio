@@ -24,23 +24,24 @@ export type Highlight = { label: string; value: string; note?: string | null };
  */
 export function highlights(s: MonthSummary, hidden: ReadonlySet<ReportPart> = new Set()): Highlight[] {
   const list: Highlight[] = [];
+  const change = (current: number, previous: number) => (s.comparable ? changeText(current, previous) : null);
   if (!hidden.has("goals")) {
     list.push(
       ...s.goals
         .filter((g) => g.value > 0)
         .slice(0, 2)
-        .map((g) => ({ label: g.name, value: goalValue(g), note: changeText(g.value, g.previous) ?? "via de website" })),
+        .map((g) => ({ label: g.name, value: goalValue(g), note: change(g.value, g.previous) ?? "via de website" })),
     );
   }
   if (!hidden.has("visitors")) {
     list.push({
       label: "Bezoekers",
       value: nl(s.stats.current.visitors),
-      note: changeText(s.stats.current.visitors, s.stats.previous.visitors),
+      note: change(s.stats.current.visitors, s.stats.previous.visitors),
     });
   }
   if (!hidden.has("views")) {
-    list.push({ label: "Pagina's bekeken", value: nl(s.stats.current.views), note: changeText(s.stats.current.views, s.stats.previous.views) });
+    list.push({ label: "Pagina's bekeken", value: nl(s.stats.current.views), note: change(s.stats.current.views, s.stats.previous.views) });
   }
   if (!hidden.has("uptime") && s.uptimePct != null) {
     list.push({ label: "Bereikbaar", value: `${formatPct(s.uptimePct)}%`, note: "van de tijd online" });
