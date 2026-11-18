@@ -70,13 +70,15 @@ The daily Vercel cron keeps running as a backup. Vercel sends the same `Authoriz
 - A failure is retried once after 3 s before the site counts as down, so a single blip doesn't email you.
 - Alerts go out only on **changes**: up → down, down → up (with how long it was down), and SSL dropping below 14 days. The SSL warning re-arms after renewal. If sending an alert fails, the state isn't saved, so the next run tries again.
 - Checks older than 90 days are deleted automatically.
+- Uptime counts from a site's first successful check. Failures before that (domain not pointed yet) are setup, not downtime, and stay out of the uptime figures, the incident list and the monthly report (`sinceFirstUp` in `lib/uptime/queries.ts`).
 
 ## How money works
 
 - **Invoices** (`payments`) are one-off amounts. **Subscriptions** are monthly. Each month an active subscription gets a **charge** row (`subscription_charges`) due on its billing day; you tap **Betaald** when the money arrives. Charges are created automatically when money pages load and on every cron run (`features/money/charges.ts`).
 - Status is never stored: paid = has a paid date, overdue = unpaid and past its due date, otherwise open (`features/money/status.ts`).
 - Clients with billing type `no_billing` (family, pro bono) are left out of every total and list, and their Betalingen tab is hidden.
-- MRR = the sum of subscriptions that are active today (between start and end date).
+- MRR = the sum of subscriptions that are being charged today (started, past their free months, not ended). What starts later is shown next to it ("€ 30,00 erbij vanaf december 2026").
+- The home page's **Deze maand** gauge compares what came in this month with everything due this month (paid items plus open ones with a due date before the month ends), not with the MRR.
 
 ### Adding Mollie later
 The schema is ready for it: `payments` and `subscription_charges` have `provider` (`manual` | `mollie`), `provider_ref` (the Mollie payment id) and `payments.payment_url` (the checkout link). The plan:
@@ -92,6 +94,7 @@ The schema is ready for it: `payments` and `subscription_charges` have `provider
 - Each lead and client has a **follow-up date** and a **contact log** (`contact_log`). Logging the first contact moves a fresh lead to Benaderd.
 - The home page's **Vandaag** list shows sites that are down, late payments, follow-ups that are due and payments expected within a week.
 - Late invoices and charges get a **Herinnering** button (opens WhatsApp or mail with the text filled in; nothing is sent by the Studio itself), and the cron job emails you once per item when it passes its due date (`features/money/overdueAlerts.ts`).
+- The monthly report only says "+12% t.o.v. de maand ervoor" when both months were measured in full (not for the running month, not when tracking started halfway through the month before), and it names sources the way a client would ("Instagram", not "l.instagram.com"; `features/summary/sources.ts`).
 - A site's **Maandrapport** tab is the monthly update for the client: a 1080 × 1350 picture rendered by `/api/report-image/[siteId]` (`next/og`, login required) that leads with results, plus a short message to send with it (`features/summary/`). On a phone, "Deel afbeelding" passes the picture to WhatsApp through the share sheet.
 - Events, Bezoekers, Rapporten and Live are marked `hidden` in `features/site-tabs/registry.ts`: out of the tab bar, still reachable from the bottom of the Stats tab.
 
