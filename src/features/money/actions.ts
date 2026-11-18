@@ -79,8 +79,10 @@ export async function deleteSubscription(id: number) {
 export async function setPaid(kind: "invoice" | "charge", id: number, paid: boolean, date?: string) {
   await requireSession();
   const today = todayISO();
-  // Only real calendar dates up to today; anything else falls back to today.
-  const valid = date && /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(date)) && date <= today;
+  // Only real calendar dates up to today (and not a half-typed year like 0002);
+  // anything else falls back to today.
+  const valid =
+    date && /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(date)) && date >= "2020-01-01" && date <= today;
   const paidDate = paid ? (valid ? date : today) : null;
   const table = kind === "invoice" ? payments : subscriptionCharges;
   await db.update(table).set({ paidDate }).where(eq(table.id, id));
