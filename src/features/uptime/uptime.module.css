@@ -125,6 +125,7 @@
 .tableWrap {
   margin: 0 calc(-1 * var(--space-5)) calc(-1 * var(--space-5));
   overflow-x: auto;
+  container-type: inline-size;
 }
 
 .table {
@@ -244,6 +245,21 @@
 }
 
 /* Phones: each row becomes a compact block. */
+/* Next to the side column (around 1180–1500px wide) the table has no room for
+   "Gecheckt": drop that column instead of scrolling sideways. */
+@media (min-width: 720px) {
+  @container (max-width: 739px) {
+    .table th:last-child,
+    .table td[data-label="Gecheckt"] {
+      display: none;
+    }
+    .table th:nth-last-child(2),
+    .table td[data-label="SSL"] {
+      padding-right: var(--space-5);
+    }
+  }
+}
+
 @media (max-width: 719px) {
   .tableWrap {
     overflow: visible;
