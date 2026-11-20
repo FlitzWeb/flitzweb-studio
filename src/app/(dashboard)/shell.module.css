@@ -5,6 +5,8 @@
  */
 
 .shell {
+  /* Wide screens: grow to 1760px, then centre (laptops never reach it). */
+  --shell-max: 1760px;
   --gutter: 12px;
   --top-h: 60px;
   position: relative;
@@ -108,7 +110,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
-  max-width: 1440px;
+  max-width: var(--shell-max);
   min-height: var(--top-h);
   margin: 0 auto;
   padding: 7px 8px 7px 18px;
@@ -295,9 +297,9 @@
 .accountMenu:popover-open {
   animation: paletteIn 0.16s var(--ease-out);
 }
-@media (min-width: 1488px) {
+@media (min-width: 1840px) {
   .accountMenu {
-    right: calc((100vw - 1440px) / 2);
+    right: calc((100vw - var(--shell-max)) / 2);
   }
 }
 .accountText {
@@ -356,7 +358,7 @@
 .stageWrap {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  max-width: 1440px;
+  max-width: var(--shell-max);
   margin: 12px auto 0;
   padding: 0 var(--gutter) calc(104px + env(safe-area-inset-bottom));
 }
