@@ -22,9 +22,10 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // Everything except public routes: login, cron/ingest/collect APIs (they have their
-  // own secrets), the tracking script, static files and brand assets. Each name is
+  // own secrets), the tracking script, static files and brand assets (incl. the home screen icon,
+  // which iOS fetches without the login cookie). Each name is
   // anchored (a whole path segment), so "/login-anything" or "/t.jsx" are not public.
   matcher: [
-    "/((?!(?:login|auth/verify|api/cron/check|api/ingest|api/collect|t\\.js|icon\\.svg|favicon\\.ico)$|_next/|brand/).*)",
+    "/((?!(?:login|auth/verify|api/cron/check|api/ingest|api/collect|t\\.js|icon\\.svg|apple-icon\\.png|favicon\\.ico)$|_next/|brand/).*)",
   ],
 };

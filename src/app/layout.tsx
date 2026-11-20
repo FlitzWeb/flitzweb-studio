@@ -8,6 +8,8 @@ const figtree = Figtree({ subsets: ["latin"], variable: "--font-figtree" });
 export const metadata: Metadata = {
   title: { default: "FlitzWeb Studio", template: "%s · FlitzWeb Studio" },
   robots: { index: false, follow: false },
+  // "Add to Home Screen" on iPhone: name under the icon (the icon is app/apple-icon.png).
+  appleWebApp: { title: "Studio" },
 };
 
 export const viewport: Viewport = {
