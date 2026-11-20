@@ -151,6 +151,12 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* Guard: something too wide gets cut off instead of making the whole page scroll sideways on a phone. */
+html,
+body {
+  overflow-x: clip;
+}
+
 body {
   margin: 0;
   background: var(--bg);

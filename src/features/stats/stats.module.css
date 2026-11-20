@@ -117,6 +117,7 @@
   margin: 0;
   padding: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* rows never grow past the card */
   gap: var(--space-1);
 }
 .topList li {
@@ -325,6 +326,7 @@
 
 .topValue {
   position: relative;
+  flex-shrink: 0; /* the label gives way, never the count */
   display: inline-flex;
   gap: var(--space-2);
   align-items: baseline;
@@ -596,6 +598,7 @@
   justify-content: space-between;
   gap: var(--space-3);
   width: 100%;
+  min-width: 0; /* else a long label (a referrer host) widens the row past the card */
   text-decoration: none;
 }
 .topList li:has(.topLink) {
