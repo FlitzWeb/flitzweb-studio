@@ -199,33 +199,39 @@
 .periods {
   display: flex;
   gap: 2px;
-  padding: 3px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  box-shadow: var(--shadow-xs);
+  border-radius: 999px;
+  background: var(--field);
+  box-shadow: inset 0 1px 0 var(--glass-edge);
   overflow-x: auto;
   scrollbar-width: none;
-  max-width: 100%;
 }
 .period {
-  padding: 6px 12px;
-  border-radius: var(--radius-sm);
-  font-size: 0.8125rem;
-  font-weight: 550;
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
   color: var(--ink-2);
+  font-size: 0.8125rem;
+  font-weight: 650;
   text-decoration: none;
   white-space: nowrap;
   transition: background-color 0.15s, color 0.15s;
+  min-height: 32px;
+  padding: 0 12px;
 }
-.period:hover {
-  background: var(--surface-2);
+.period:hover:not([aria-current]) {
+  background: var(--surface-3);
   color: var(--ink);
 }
 .period[aria-current] {
-  background: var(--brand-soft);
-  color: var(--brand-ink);
-  font-weight: 600;
+  background: var(--brand);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25), 0 4px 14px -4px color-mix(in srgb, var(--brand) 70%, transparent);
 }
 
 .live {

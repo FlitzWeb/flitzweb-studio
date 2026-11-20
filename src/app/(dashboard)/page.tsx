@@ -76,6 +76,7 @@ export default async function OverviewPage() {
           icon={<Target />}
           label="In de pijplijn"
           value={openLeads}
+          tone="brand"
           hint={`${stages.replied + stages.meeting} met reactie of afspraak`}
           href="/leads"
         />

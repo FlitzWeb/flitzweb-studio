@@ -44,7 +44,7 @@ export function MetricsBar({ current, previous }: { current: WebsiteStats; previ
         return (
           <div key={m.label} className={styles.metric}>
             <dt>{m.label}</dt>
-            <dd className="num">{m.format(m.value)}</dd>
+            <dd className="num" data-count>{m.format(m.value)}</dd>
             {change && diff !== 0 && change !== "0%" && (
               <span className={styles.change} data-good={good || undefined} data-bad={!good || undefined}>
                 {diff > 0 ? "↑" : "↓"} {change}

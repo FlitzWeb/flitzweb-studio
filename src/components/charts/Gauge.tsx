@@ -50,11 +50,12 @@ export function Gauge({
             strokeLinecap="round"
             stroke={t.on ? "var(--chart-1)" : "var(--chart-track)"}
             strokeOpacity={t.on ? t.opacity : 1}
+            data-tick={t.on || undefined}
           />
         ))}
       </svg>
       <figcaption className={styles.gaugeText}>
-        <strong className="num">{label}</strong>
+        <strong className="num" data-count>{label}</strong>
         {caption && <span>{caption}</span>}
       </figcaption>
     </figure>

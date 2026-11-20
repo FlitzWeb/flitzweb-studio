@@ -19,18 +19,19 @@ export function KpiCard({
   delta?: React.ReactNode;
   hint?: React.ReactNode;
   href?: string;
-  tone?: "danger";
+  /** "brand" = the one highlighted card on a page (voltage blue glass). */
+  tone?: "danger" | "brand";
 }) {
   const body = (
     <>
       <div className={styles.head}>
-        <span className="icon-chip" aria-hidden="true">
+        <span className={styles.label}>{label}</span>
+        <span className={`icon-chip ${styles.icon}`} aria-hidden="true">
           {icon}
         </span>
-        <span className={styles.label}>{label}</span>
       </div>
       <div className={styles.valueRow}>
-        <span className={`num ${styles.value}`}>
+        <span className={`num ${styles.value}`} data-count>
           {value ?? "–"}
           {value != null && unit && <small>{unit}</small>}
         </span>

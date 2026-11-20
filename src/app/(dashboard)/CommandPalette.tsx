@@ -163,13 +163,14 @@ export function CommandPalette({
   );
 }
 
-/** The search field in the top bar; really a button that opens the palette. */
+/** The search bar in the top bar; really a button that opens the palette. */
 export function SearchField() {
   return (
-    <button type="button" className={styles.search} onClick={openCommandPalette}>
-      <Search aria-hidden="true" />
-      <span>Zoek sites, klanten…</span>
-      <span className="kbd">⌘K</span>
+    <button type="button" className={styles.ask} onClick={openCommandPalette} aria-label="Zoeken: sites, klanten, pagina's (⌘K)">
+      <span className={styles.orb} aria-hidden="true" />
+      <span className={styles.askText}>Zoek een site, klant of pagina</span>
+      <span className="kbd" aria-hidden="true">⌘K</span>
+      <Search aria-hidden="true" className={styles.askIcon} />
     </button>
   );
 }

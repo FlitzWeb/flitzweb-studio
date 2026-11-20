@@ -21,15 +21,16 @@ const H = 1350;
 const PAD = 32; // grey margin around the white card
 const INNER = 56; // card padding left and right
 const CONTENT = W - 2 * PAD - 2 * INNER - 4; // usable width inside the card (minus its border)
-const INK = "#0e1420";
+const INK = "#0f172a";
 const INK_2 = "#4a5465";
 const INK_3 = "#687284";
 const LINE = "#e5e8ed";
-const BRAND = "#2563eb";
+const BRAND = "#2f5bff";
 
-// public/brand/mark.svg, inlined so the image needs no file or network access.
-const MARK = `data:image/svg+xml,${encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="36 166 276 202"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3B82F6"/><stop offset="1" stop-color="#06B6D4"/></linearGradient></defs><g transform="rotate(-14 228 256)"><rect x="64" y="196" width="64" height="22" rx="11" fill="url(#g)" opacity="0.3"/><rect x="52" y="250" width="94" height="22" rx="11" fill="url(#g)" opacity="0.55"/><rect x="70" y="304" width="72" height="22" rx="11" fill="url(#g)" opacity="0.78"/><path d="M156,152 L156,344 L204,296 L240,360 L276,344 L240,284 L300,284 Z" fill="url(#g)"/></g></svg>',
+// The Bolt Z wordmark (brand kit 2026-11: ink letters, voltage-blue z), inlined so
+// the image needs no file or network access.
+const LOGO = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="27 36 788 167"><path fill="#0F172A" d="M44.2 186V110.6H28.4V86H44.2V76.72Q44.2 60.36 52.8 51.02Q61.4 41.68 79.12 41.68Q85.84 41.68 93.04 43.92Q100.24 46.16 105.4 49.2L93.8 71.24Q91.32 69.56 88.94 68.88Q86.56 68.2 84.52 68.2Q79.8 68.2 77.6 71.48Q75.4 74.76 75.4 82.48V86H98V110.6H75.4V186Z M112.6 186V46H143.8V186Z M163.56 186V86H194.76V186ZM179.2 73.12Q172.16 73.12 166.88 67.84Q161.6 62.56 161.6 55.52Q161.6 48.28 166.88 43.1Q172.16 37.92 179.2 37.92Q186.44 37.92 191.62 43.1Q196.8 48.28 196.8 55.52Q196.8 62.56 191.62 67.84Q186.44 73.12 179.2 73.12Z M257.52 188.4Q239.88 188.4 231.12 179.9Q222.36 171.4 222.36 155.6V112.2H206.8V86H222.36V54.8H253.56V86H276.4V112.2H253.56V147.76Q253.56 153.84 255.76 156.66Q257.96 159.48 262.64 159.48Q264.4 159.48 266.78 158.54Q269.16 157.6 271.16 156.2L281.92 179.08Q277.16 182.92 270.52 185.66Q263.88 188.4 257.52 188.4Z M462.26 186 428.26 86H460.1L478.38 144.44L496.86 86H527.58L545.54 143.08L564.26 86H596.1L561.94 186H531.34L512.14 123.44L492.9 186Z M653.76 188.4Q638.26 188.4 626.26 181.75Q614.26 175.1 607.46 163.3Q600.66 151.5 600.66 136Q600.66 120.5 607.51 108.7Q614.36 96.9 626.41 90.25Q638.46 83.6 654.16 83.6Q668.46 83.6 679.86 90.4Q691.26 97.2 697.96 110.65Q704.66 124.1 704.66 144H633.06Q634.06 152.7 640.11 157.8Q646.16 162.9 654.66 162.9Q662.06 162.9 667.11 159.6Q672.16 156.3 674.16 151.2L701.76 160.7Q697.86 170.1 690.56 176.3Q683.26 182.5 673.81 185.45Q664.36 188.4 653.76 188.4ZM633.86 123.2H672.06Q671.26 117.3 668.26 113.8Q665.26 110.3 661.26 108.75Q657.26 107.2 653.26 107.2Q649.36 107.2 645.21 108.7Q641.06 110.2 637.91 113.7Q634.76 117.2 633.86 123.2Z M775.14 188.4Q765.5 188.4 758.26 184.5Q751.02 180.6 746.18 173.24L745.1 186H715.46V46H746.66V97.96Q751.5 90.92 758.58 87.26Q765.66 83.6 775.14 83.6Q789.14 83.6 799.26 89.9Q809.38 96.2 814.86 107.92Q820.34 119.64 820.34 136.01Q820.34 152.16 814.86 163.98Q809.38 175.8 799.26 182.1Q789.14 188.4 775.14 188.4ZM766.98 159.68Q773.03 159.68 777.68 156.62Q782.34 153.56 785.1 148.23Q787.86 142.91 787.86 135.99Q787.86 129.08 785.23 123.77Q782.6 118.46 777.92 115.47Q773.25 112.48 767.18 112.48Q761.21 112.48 756.54 115.48Q751.88 118.48 749.27 123.8Q746.66 129.11 746.66 136.02Q746.66 142.92 749.26 148.28Q751.86 153.64 756.44 156.66Q761.03 159.68 766.98 159.68Z"/><path fill="#2F5BFF" d="M299.93 78 L303.97 71 L416.26 71 L362.56 164 L414.52 194 L410.48 201 L298.2 201 L351.89 108 Z"/></svg>',
 )}`;
 
 const dayFmt = new Intl.DateTimeFormat("nl-NL", {
@@ -82,7 +83,7 @@ export async function GET(
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        background: "#f3f5f8",
+        background: "#f5f8fc",
         padding: PAD,
         fontFamily: "sans-serif",
         color: INK,
@@ -108,10 +109,7 @@ export async function GET(
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <img src={MARK} width={58} height={42} alt="" />
-            <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: -1 }}>
-              FlitzWeb
-            </div>
+            <img src={LOGO} width={207} height={44} alt="FlitzWeb" />
           </div>
           <div
             style={{
@@ -119,7 +117,7 @@ export async function GET(
               fontSize: 24,
               fontWeight: 600,
               color: BRAND,
-              background: "#eaf1fe",
+              background: "#ebefff",
               borderRadius: 999,
               padding: "10px 22px",
             }}
@@ -352,7 +350,7 @@ export async function GET(
                 flexDirection: "column",
                 marginTop: 20,
                 borderRadius: 20,
-                background: "#eaf1fe",
+                background: "#ebefff",
                 padding: "14px 24px",
               }}
             >

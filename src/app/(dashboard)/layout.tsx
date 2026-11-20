@@ -9,7 +9,8 @@ import { requireSession } from "@/lib/auth";
 import { displayHost } from "@/lib/format";
 import { signOut, signOutEverywhere } from "../login/actions";
 import { CommandPalette, SearchField } from "./CommandPalette";
-import { SidebarNav, TabBar } from "./NavLinks";
+import { BottomDock, SideDock } from "./NavLinks";
+import { PageMotion } from "./PageMotion";
 import styles from "./shell.module.css";
 
 export default async function DashboardLayout({
@@ -37,63 +38,70 @@ export default async function DashboardLayout({
 
   return (
     <div className={styles.shell}>
-      <aside className={styles.sidebar}>
-        <Link href="/" className={styles.brand} aria-label="FlitzWeb Studio, overzicht">
-          <Logo studio />
-        </Link>
-        <div className={styles.sidebarScroll}>
-          <SidebarNav sites={navSites} />
+      <div className={styles.backdrop} aria-hidden="true">
+        <div className={styles.horizon}>
+          <span className={`${styles.arc} ${styles.arcRim}`} />
+          <span className={`${styles.arc} ${styles.arcA}`} />
+          <span className={`${styles.arc} ${styles.arcB}`} />
+          <span className={`${styles.arc} ${styles.arcCore}`} />
         </div>
-        <div className={styles.account}>
-          <span className={styles.avatar} aria-hidden="true">
-            {email.charAt(0).toUpperCase()}
-          </span>
-          <span className={styles.accountText}>
-            <small>Ingelogd als</small>
-            <span>{email}</span>
-          </span>
-          <form action={signOut}>
-            <button className={styles.iconBtn} type="submit" aria-label="Uitloggen" title="Uitloggen">
-              <LogOut aria-hidden="true" />
-            </button>
-          </form>
-          <form action={signOutEverywhere}>
-            <button
-              className={styles.iconBtn}
-              type="submit"
-              aria-label="Overal uitloggen (alle apparaten)"
-              title="Overal uitloggen (alle apparaten)"
-            >
-              <ShieldX aria-hidden="true" />
-            </button>
-          </form>
-        </div>
-      </aside>
+      </div>
 
-      <div className={styles.frame}>
+      <div className={styles.topWrap}>
         <header className={styles.topbar}>
-          <Link href="/" className={styles.mobileBrand} aria-label="FlitzWeb Studio, overzicht">
-            <Logo />
+          <Link href="/" className={styles.brand} aria-label="FlitzWeb Studio, overzicht">
+            <Logo studio />
           </Link>
           <SearchField />
           <div className={styles.tools}>
             {monitored.length > 0 && (
-              <Link href="/" className="badge" data-tone={down > 0 ? "danger" : "ok"}>
-                {down === 0 ? "Alles online" : down === 1 ? "1 site offline" : `${down} sites offline`}
+              <Link href="/" className={styles.statusPill} data-tone={down > 0 ? "danger" : "ok"}>
+                <i aria-hidden="true" />
+                <span>{down === 0 ? "Alles online" : down === 1 ? "1 site offline" : `${down} sites offline`}</span>
               </Link>
             )}
             <ThemeToggle className={styles.iconBtn} />
-            <form action={signOut} className={styles.mobileOnly}>
-              <button className={styles.iconBtn} type="submit" aria-label="Uitloggen" title="Uitloggen">
-                <LogOut aria-hidden="true" />
-              </button>
-            </form>
+            <button
+              type="button"
+              className={styles.avatar}
+              popoverTarget="account-menu"
+              aria-label={`Account: ${email}`}
+              title={email}
+            >
+              {email.charAt(0).toUpperCase()}
+            </button>
           </div>
         </header>
-        <main className={styles.main}>{children}</main>
       </div>
 
-      <TabBar />
+      <div id="account-menu" popover="auto" className={styles.accountMenu}>
+        <p className={styles.accountText}>
+          <small>Ingelogd als</small>
+          <span>{email}</span>
+        </p>
+        <form action={signOut}>
+          <button className={styles.menuItem} type="submit">
+            <LogOut aria-hidden="true" />
+            Uitloggen
+          </button>
+        </form>
+        <form action={signOutEverywhere}>
+          <button className={styles.menuItem} type="submit">
+            <ShieldX aria-hidden="true" />
+            Overal uitloggen
+            <small>alle apparaten</small>
+          </button>
+        </form>
+      </div>
+
+      <div className={styles.stageWrap}>
+        <SideDock sites={navSites} />
+        <main className={styles.stage}>
+          <PageMotion>{children}</PageMotion>
+        </main>
+      </div>
+
+      <BottomDock />
       <CommandPalette
         sites={siteRows.map((s) => ({ id: s.id, name: s.name, host: displayHost(s.url) }))}
         clients={clientRows}

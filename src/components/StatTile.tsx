@@ -19,7 +19,7 @@ export function StatTile({
   return (
     <div className={styles.tile} data-tone={tone} data-size={size}>
       <dt>{label}</dt>
-      <dd className="num">
+      <dd className="num" data-count>
         {value ?? "–"}
         {value != null && unit && <small> {unit}</small>}
       </dd>

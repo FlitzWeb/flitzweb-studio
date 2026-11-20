@@ -3,57 +3,74 @@
    raw values, so light/dark mode and future tweaks stay in one place.
    ========================================================================== */
 
+/* Dark is the default (the Bolt Z brand lives on Ink); the toggle can force
+   the light "paper" theme. Panels are frosted glass over the horizon glow, so
+   --surface is translucent; use --surface-solid for menus and dialogs. */
 :root {
-  /* Surfaces: cool grey canvas, white panels, sidebar one step apart. */
-  --bg: #f3f5f8;
-  --surface: #ffffff;
-  --surface-2: #f6f7f9; /* hover rows, insets, input fill */
-  --surface-3: #eceff3; /* tracks, skeletons, pressed */
-  --sidebar: #ffffff;
+  /* Brand kit (Bolt Z, 2026-11) */
+  --voltage: #2f5bff;
+  --bolt: #7c9bff; /* the z-bolt on dark */
+
+  /* Surfaces */
+  --bg: #060913;
+  --surface: rgb(19 28 52 / 0.5); /* glass panel */
+  --surface-2: rgb(255 255 255 / 0.045); /* hover rows, insets */
+  --surface-3: rgb(255 255 255 / 0.08); /* tracks, pressed */
+  --surface-solid: #0f172a; /* dialogs, menus, select options */
+  --field: rgb(4 7 16 / 0.42); /* inputs */
+  --glass-edge: rgb(255 255 255 / 0.09); /* top rim light */
+  --glass-sheen: rgb(124 155 255 / 0.07);
 
   /* Ink */
-  --ink: #0e1420;
-  --ink-2: #4a5465; /* secondary text */
-  --ink-3: #687284; /* meta, axis labels; 4.6:1 on white */
-  --line: #e5e8ed;
-  --line-strong: #d5dae2;
+  --ink: #f5f8fc;
+  --ink-2: #b6c0d3;
+  --ink-3: #8c98af;
+  --line: rgb(255 255 255 / 0.085);
+  --line-strong: rgb(255 255 255 / 0.15);
 
-  /* Brand: FlitzWeb blue, cyan as its partner */
-  --brand: #2563eb;
-  --brand-hover: #1d4fd8;
-  --brand-ink: #1e4fd6; /* brand-coloured text */
-  --brand-soft: #eaf1fe;
-  --accent: #0ea5b7;
+  /* Brand */
+  --brand: #2f5bff;
+  --brand-hover: #4a70ff;
+  --brand-ink: #9fb4ff; /* brand-coloured text */
+  --brand-soft: rgb(47 91 255 / 0.18);
+  --accent: var(--bolt);
 
   /* Status (never reused as chart series) */
-  --ok: #128a4a;
-  --ok-soft: #e4f6ec;
-  --danger: #d92d3a;
-  --danger-soft: #fdebec;
-  --warn: #b25e09;
-  --warn-soft: #fdf1e1;
-  --muted-dot: #c4cad4;
+  --ok: #3ccf7f;
+  --ok-soft: rgb(60 207 127 / 0.13);
+  --danger: #ff6b74;
+  --danger-soft: rgb(255 107 116 / 0.13);
+  --warn: #f5a524;
+  --warn-soft: rgb(245 165 36 / 0.13);
+  --muted-dot: #46506a;
 
-  /* Charts: fixed categorical order, validated (light + dark) */
-  --chart-1: #2f6bff;
-  --chart-2: #14b8c8;
-  --chart-3: #7c5cf6;
-  --chart-4: #f59e0b;
+  /* Charts: fixed categorical order */
+  --chart-1: #7c9bff;
+  --chart-2: #38bdf8;
+  --chart-3: #a78bfa;
+  --chart-4: #f5a524;
   --chart-line: var(--chart-1);
-  --chart-bar: #d5e2ff;
-  --chart-track: #eef1f5;
-  --chart-grid: #edf0f4;
+  --chart-bar: rgb(124 155 255 / 0.24);
+  --chart-track: rgb(255 255 255 / 0.07);
+  --chart-grid: rgb(255 255 255 / 0.07);
+
+  /* Horizon glow behind everything */
+  --glow-rim: rgb(255 255 255 / 0.9);
+  --glow-a: #7c9bff;
+  --glow-b: #2f5bff;
+  --glow-strength: 0.55;
 
   /* Shape */
   --radius-xs: 6px;
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --shadow-xs: 0 1px 2px rgb(16 24 40 / 0.04);
-  --shadow-sm: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.03);
-  --shadow-md: 0 4px 8px -2px rgb(16 24 40 / 0.06), 0 12px 28px -6px rgb(16 24 40 / 0.1);
-  --shadow-lg: 0 24px 48px -12px rgb(16 24 40 / 0.22);
-  --ring: 0 0 0 3px color-mix(in srgb, var(--brand) 22%, transparent);
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 30px;
+  --shadow-xs: inset 0 1px 0 var(--glass-edge);
+  --shadow-sm: inset 0 1px 0 var(--glass-edge), 0 8px 24px -12px rgb(0 0 0 / 0.5);
+  --shadow-md: inset 0 1px 0 var(--glass-edge), 0 18px 40px -14px rgb(0 0 0 / 0.6);
+  --shadow-lg: 0 30px 80px -20px rgb(0 0 0 / 0.75);
+  --ring: 0 0 0 3px color-mix(in srgb, var(--brand) 35%, transparent);
 
   /* Spacing scale */
   --space-1: 4px;
@@ -70,86 +87,54 @@
   --z-overlay: 40;
   --z-modal: 50;
 
-  --font-ui: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --font-ui: var(--font-figtree), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
-  color-scheme: light;
-}
-
-/* Dark mode: follows the system unless the toggle forces a theme. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0b0e14;
-    --surface: #12161e;
-    --surface-2: #181d27;
-    --surface-3: #212734;
-    --sidebar: #0f131a;
-    --ink: #eef1f6;
-    --ink-2: #b2bac8;
-    --ink-3: #8790a1;
-    --line: #232937;
-    --line-strong: #2f3646;
-    --brand: #4c84ff;
-    --brand-hover: #6a98ff;
-    --brand-ink: #8ab0ff;
-    --brand-soft: rgb(76 132 255 / 0.14);
-    --accent: #2cc7d8;
-    --ok: #3ccf7f;
-    --ok-soft: rgb(60 207 127 / 0.13);
-    --danger: #ff6b74;
-    --danger-soft: rgb(255 107 116 / 0.13);
-    --warn: #f5a524;
-    --warn-soft: rgb(245 165 36 / 0.13);
-    --muted-dot: #3d4556;
-    --chart-1: #5b8cff;
-    --chart-2: #22c3d3;
-    --chart-3: #957bff;
-    --chart-4: #f5a524;
-    --chart-bar: #23345c;
-    --chart-track: #1c2230;
-    --chart-grid: #1e2430;
-    --shadow-xs: none;
-    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
-    --shadow-md: 0 12px 28px -6px rgb(0 0 0 / 0.5);
-    --shadow-lg: 0 24px 48px -12px rgb(0 0 0 / 0.6);
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0b0e14;
-  --surface: #12161e;
-  --surface-2: #181d27;
-  --surface-3: #212734;
-  --sidebar: #0f131a;
-  --ink: #eef1f6;
-  --ink-2: #b2bac8;
-  --ink-3: #8790a1;
-  --line: #232937;
-  --line-strong: #2f3646;
-  --brand: #4c84ff;
-  --brand-hover: #6a98ff;
-  --brand-ink: #8ab0ff;
-  --brand-soft: rgb(76 132 255 / 0.14);
-  --accent: #2cc7d8;
-  --ok: #3ccf7f;
-  --ok-soft: rgb(60 207 127 / 0.13);
-  --danger: #ff6b74;
-  --danger-soft: rgb(255 107 116 / 0.13);
-  --warn: #f5a524;
-  --warn-soft: rgb(245 165 36 / 0.13);
-  --muted-dot: #3d4556;
-  --chart-1: #5b8cff;
-  --chart-2: #22c3d3;
-  --chart-3: #957bff;
-  --chart-4: #f5a524;
-  --chart-bar: #23345c;
-  --chart-track: #1c2230;
-  --chart-grid: #1e2430;
-  --shadow-xs: none;
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
-  --shadow-md: 0 12px 28px -6px rgb(0 0 0 / 0.5);
-  --shadow-lg: 0 24px 48px -12px rgb(0 0 0 / 0.6);
   color-scheme: dark;
+}
+
+/* Light "paper" theme, only when the toggle asks for it. */
+:root[data-theme="light"] {
+  --bolt: #2f5bff;
+  --bg: #eef2f9;
+  --surface: rgb(255 255 255 / 0.6);
+  --surface-2: rgb(15 23 42 / 0.035);
+  --surface-3: rgb(15 23 42 / 0.065);
+  --surface-solid: #ffffff;
+  --field: rgb(255 255 255 / 0.75);
+  --glass-edge: rgb(255 255 255 / 0.9);
+  --glass-sheen: rgb(255 255 255 / 0.5);
+  --ink: #0f172a;
+  --ink-2: #44506a;
+  --ink-3: #5c6781;
+  --line: rgb(15 23 42 / 0.09);
+  --line-strong: rgb(15 23 42 / 0.16);
+  --brand: #2f5bff;
+  --brand-hover: #2449e0;
+  --brand-ink: #2445d4;
+  --brand-soft: rgb(47 91 255 / 0.1);
+  --ok: #128a4a;
+  --ok-soft: #e4f6ec;
+  --danger: #d92d3a;
+  --danger-soft: #fdebec;
+  --warn: #b25e09;
+  --warn-soft: #fdf1e1;
+  --muted-dot: #c4cad4;
+  --chart-1: #2f5bff;
+  --chart-2: #0891b2;
+  --chart-3: #7c5cf6;
+  --chart-4: #d97706;
+  --chart-bar: rgb(47 91 255 / 0.16);
+  --chart-track: rgb(15 23 42 / 0.07);
+  --chart-grid: rgb(15 23 42 / 0.07);
+  --glow-rim: #ffffff;
+  --glow-a: #a9bcff;
+  --glow-b: #6f8dff;
+  --glow-strength: 0.5;
+  --shadow-sm: inset 0 1px 0 var(--glass-edge), 0 8px 24px -14px rgb(15 23 42 / 0.18);
+  --shadow-md: inset 0 1px 0 var(--glass-edge), 0 18px 40px -16px rgb(15 23 42 / 0.22);
+  --shadow-lg: 0 30px 80px -24px rgb(15 23 42 / 0.35);
+  color-scheme: light;
 }
 
 /* ==========================================================================
@@ -173,7 +158,6 @@ body {
   font-family: var(--font-ui);
   font-size: 14px;
   line-height: 1.5;
-  font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
 }
 
@@ -215,13 +199,13 @@ code {
 }
 .page-title {
   margin: 0;
-  font-size: 1.625rem;
-  font-weight: 650;
-  letter-spacing: -0.022em;
-  line-height: 1.2;
+  font-size: clamp(1.75rem, 2.6vw, 2.5rem);
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
 }
 .page-sub {
-  margin: 2px 0 0;
+  margin: 8px 0 0;
   color: var(--ink-3);
   font-size: 0.875rem;
 }
@@ -236,10 +220,10 @@ code {
    ========================================================================== */
 
 .card {
-  background: var(--surface);
+  background: linear-gradient(155deg, var(--glass-sheen), transparent 42%), var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-sm);
   min-width: 0;
 }
 .card-head {
@@ -285,9 +269,9 @@ code {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 36px;
-  padding: 0 14px;
-  border-radius: var(--radius-sm);
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
   border: 1px solid var(--line-strong);
   background: var(--surface);
   color: var(--ink);
@@ -317,7 +301,7 @@ code {
   border-color: transparent;
   background: var(--brand);
   color: #fff;
-  box-shadow: 0 1px 2px rgb(16 24 40 / 0.1), inset 0 1px 0 rgb(255 255 255 / 0.14);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22), 0 6px 18px -6px color-mix(in srgb, var(--brand) 70%, transparent);
 }
 .btn-primary:hover {
   background: var(--brand-hover);
@@ -328,7 +312,7 @@ code {
 }
 .btn-sm {
   min-height: 32px;
-  padding: 0 10px;
+  padding: 0 12px;
   font-size: 0.8125rem;
 }
 .btn-ghost {
@@ -365,9 +349,8 @@ code {
   padding: 0 12px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--line-strong);
-  background: var(--surface);
+  background: var(--field);
   color: var(--ink);
-  box-shadow: var(--shadow-xs);
   font: inherit;
   font-size: 16px; /* prevents iOS zoom on focus */
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -417,6 +400,10 @@ select.input {
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 36px;
+}
+select.input option {
+  background: var(--surface-solid);
+  color: var(--ink);
 }
 
 /* ==========================================================================
@@ -517,7 +504,7 @@ select.input {
   border-radius: 5px;
   background: var(--surface-2);
   color: var(--ink-3);
-  font: 550 0.6875rem/1 var(--font-ui);
+  font: 600 0.6875rem/1 var(--font-ui);
 }
 
 .back-link {
@@ -534,23 +521,15 @@ select.input {
   color: var(--ink);
 }
 
-/* Logo swaps automatically with the theme. */
-.logo-dark {
+/* Logo swaps with the theme (dark is the default). */
+.logo-light {
   display: none;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .logo-light {
-    display: none;
-  }
-  :root:not([data-theme="light"]) .logo-dark {
-    display: block;
-  }
-}
-:root[data-theme="dark"] .logo-light {
-  display: none;
-}
-:root[data-theme="dark"] .logo-dark {
+:root[data-theme="light"] .logo-light {
   display: block;
+}
+:root[data-theme="light"] .logo-dark {
+  display: none;
 }
 
 .sr-only {
@@ -560,6 +539,11 @@ select.input {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* Set by the inline script in app/layout.tsx; PageMotion removes it when it starts. */
+.motion-pending [data-motion-root] {
+  opacity: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

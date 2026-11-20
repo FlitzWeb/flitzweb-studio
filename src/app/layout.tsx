@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Figtree } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const figtree = Figtree({ subsets: ["latin"], variable: "--font-figtree" });
 
 export const metadata: Metadata = {
   title: { default: "FlitzWeb Studio", template: "%s · FlitzWeb Studio" },
@@ -12,25 +12,29 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F3F5F8" },
-    { media: "(prefers-color-scheme: dark)", color: "#0B0E14" },
-  ],
+  themeColor: "#060913",
 };
 
 // Applies the saved theme before first paint to avoid a flash.
 const themeScript = `try{var t=localStorage.getItem("fw-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}`;
 
+// Hides the page content until the enter animation takes over (so the finished page
+// doesn't flash first). Skipped with reduced motion; never longer than 1.5 s.
+const motionScript = `if(!matchMedia("(prefers-reduced-motion: reduce)").matches){var h=document.documentElement;h.classList.add("motion-pending");setTimeout(function(){h.classList.remove("motion-pending")},1500)}`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="nl"
-      className={inter.variable}
+      className={figtree.variable}
       suppressHydrationWarning
     >
       <body>
         <Script id="theme" strategy="beforeInteractive">
           {themeScript}
+        </Script>
+        <Script id="motion" strategy="beforeInteractive">
+          {motionScript}
         </Script>
         {children}
       </body>

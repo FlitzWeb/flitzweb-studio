@@ -156,30 +156,37 @@ input.paidDate {
 
 .tabs {
   display: flex;
-  gap: var(--space-1);
+  gap: 2px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--field);
+  box-shadow: inset 0 1px 0 var(--glass-edge);
+  overflow-x: auto;
+  scrollbar-width: none;
   margin-bottom: var(--space-5);
-  border-bottom: 1px solid var(--line);
 }
 .tab {
-  position: relative;
-  padding: 10px 12px 12px;
-  color: var(--ink-3);
-  font-size: 0.875rem;
-  font-weight: 550;
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  font-weight: 650;
   text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s;
 }
-.tab:hover {
+.tab:hover:not([aria-current="page"]) {
+  background: var(--surface-3);
   color: var(--ink);
 }
 .tab[aria-current="page"] {
-  color: var(--ink);
-  font-weight: 600;
-}
-.tab[aria-current="page"]::after {
-  content: "";
-  position: absolute;
-  inset: auto 8px -1px;
-  height: 2px;
-  border-radius: 2px 2px 0 0;
   background: var(--brand);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25), 0 4px 14px -4px color-mix(in srgb, var(--brand) 70%, transparent);
 }

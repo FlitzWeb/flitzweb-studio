@@ -21,7 +21,7 @@
 .confirm .yes {
   background: var(--danger);
   border-color: var(--danger);
-  color: var(--surface);
+  color: #fff;
 }
 .confirm .yes:hover {
   background: color-mix(in srgb, var(--danger) 88%, #000);
