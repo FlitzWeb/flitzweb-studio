@@ -1,6 +1,7 @@
 .kpi {
   display: grid;
-  align-content: space-between;
+  /* Top-aligned, so the numbers line up across a row whether or not a card has a hint. */
+  align-content: start;
   gap: var(--space-3);
   min-height: 128px;
   padding: var(--space-4) var(--space-4) var(--space-4) var(--space-5);
