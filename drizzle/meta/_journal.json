@@ -120,6 +120,13 @@
       "when": 1795043401338,
       "tag": "0016_security_review",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1795224451977,
+      "tag": "0017_lead_socials",
+      "breakpoints": true
     }
   ]
 }

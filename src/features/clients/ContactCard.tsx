@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Client } from "@/db";
 import { ContactActions } from "./ContactActions";
 import { channelLabels } from "./schema";
+import { hasSocials, SocialLinks } from "./SocialLinks";
 import styles from "./clients.module.css";
 import tabStyles from "@/features/site-tabs/tabs.module.css";
 
@@ -30,6 +31,7 @@ export function ContactCard({ client, showClientLink }: { client: Client; showCl
         <Fact label="WhatsApp">{client.whatsapp ?? (client.phone && "zelfde als telefoon")}</Fact>
         <Fact label="E-mail">{client.email}</Fact>
         <Fact label="Voorkeur">{client.preferredChannel && channelLabels[client.preferredChannel]}</Fact>
+        <Fact label="Socials">{hasSocials(client) && <SocialLinks client={client} />}</Fact>
         <Fact label="Adres">
           {mapsLink && (
             <a href={mapsLink} target="_blank" rel="noreferrer">

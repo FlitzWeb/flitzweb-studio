@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContactActions } from "@/features/clients/ContactActions";
 import { getLeads, getStageCounts } from "@/features/clients/queries";
+import { hasSocials, SocialLinks } from "@/features/clients/SocialLinks";
 import { StageSelect } from "@/features/clients/StageSelect";
 import { contactKindLabels, isStage, OPEN_STAGES, stageLabels, type Stage } from "@/features/clients/stages";
 import styles from "@/features/clients/clients.module.css";
@@ -64,25 +65,28 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         <ul className={styles.list}>
           {leads.map((lead) => (
             <li key={lead.id} className={styles.row}>
-              <Link href={`/klanten/${lead.id}`} className={styles.rowMain}>
-                <h2>{lead.name}</h2>
-                <div className={styles.rowMeta}>
-                  {lead.nextFollowUp ? (
-                    <span className={styles.due} data-due={lead.nextFollowUp <= today || undefined}>
-                      Opvolgen {formatDue(lead.nextFollowUp, today)}
-                    </span>
-                  ) : (
-                    lead.stage !== "lost" && lead.stage !== "lead" && <span className={styles.due} data-warn>Geen opvolgdatum</span>
-                  )}
-                  {lead.industry && <span>{lead.industry}</span>}
-                  {lead.websiteStatus && <span>{lead.websiteStatus}</span>}
-                  {lead.lastContact && (
-                    <span>
-                      {contactKindLabels[lead.lastContact.kind]} {formatAgo(lead.lastContact.occurredOn, today)}
-                    </span>
-                  )}
-                </div>
-              </Link>
+              <div className={styles.rowBody}>
+                <Link href={`/klanten/${lead.id}`} className={styles.rowMain}>
+                  <h2>{lead.name}</h2>
+                  <div className={styles.rowMeta}>
+                    {lead.nextFollowUp ? (
+                      <span className={styles.due} data-due={lead.nextFollowUp <= today || undefined}>
+                        Opvolgen {formatDue(lead.nextFollowUp, today)}
+                      </span>
+                    ) : (
+                      lead.stage !== "lost" && lead.stage !== "lead" && <span className={styles.due} data-warn>Geen opvolgdatum</span>
+                    )}
+                    {lead.industry && <span>{lead.industry}</span>}
+                    {lead.websiteStatus && <span>{lead.websiteStatus}</span>}
+                    {lead.lastContact && (
+                      <span>
+                        {contactKindLabels[lead.lastContact.kind]} {formatAgo(lead.lastContact.occurredOn, today)}
+                      </span>
+                    )}
+                  </div>
+                </Link>
+                {hasSocials(lead) && <SocialLinks client={lead} />}
+              </div>
               <div className={styles.rowTools}>
                 <ContactActions client={lead} compact />
                 <StageSelect id={lead.id} stage={lead.stage} />

@@ -60,6 +60,10 @@ export const clients = pgTable("clients", {
   nextFollowUp: date("next_follow_up"),
   industry: text(), // "Kapper", "Rijschool"
   websiteStatus: text("website_status"), // "Geen website", "Outdated website", ...
+  // Social profiles: the bare handle, or the path after facebook.com/ (see lib/socials).
+  instagram: text(),
+  facebook: text(),
+  tiktok: text(),
   createdAt: createdAt(),
 });
 

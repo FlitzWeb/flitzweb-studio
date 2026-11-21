@@ -1,6 +1,19 @@
 import { z } from "zod";
 import { optionalDate, optionalText, requiredText } from "@/lib/forms";
+import { normalizeSocial, socialLabels, type Social } from "@/lib/socials";
 import { STAGES } from "./stages";
+
+/** A handle or pasted profile link; empty becomes null. */
+const optionalSocial = (kind: Social) =>
+  z
+    .string()
+    .trim()
+    .transform((v, ctx) => {
+      if (!v) return null;
+      const clean = normalizeSocial(kind, v);
+      if (!clean) ctx.addIssue({ code: "custom", message: `Geen geldig ${socialLabels[kind]}-profiel` });
+      return clean;
+    });
 
 export const clientSchema = z.object({
   name: requiredText("Geef de klant een naam"),
@@ -23,6 +36,9 @@ export const clientSchema = z.object({
   nextFollowUp: optionalDate,
   industry: optionalText,
   websiteStatus: optionalText,
+  instagram: optionalSocial("instagram"),
+  facebook: optionalSocial("facebook"),
+  tiktok: optionalSocial("tiktok"),
 });
 
 export const contactSchema = z.object({

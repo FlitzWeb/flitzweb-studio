@@ -199,6 +199,50 @@
   color: inherit;
 }
 
+/* Name + facts (the link) with the social profiles under it. */
+.rowBody {
+  flex: 1;
+  min-width: 0;
+}
+.rowBody .rowMain {
+  display: block;
+}
+.socials {
+  /* Above the row-wide link, so each profile opens on its own. */
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  width: fit-content;
+  max-width: 100%;
+  margin-top: var(--space-1);
+  font-size: 0.8125rem;
+}
+.social {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.social span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.social svg {
+  flex: none;
+  color: var(--ink-3);
+}
+.social:hover,
+.social:hover svg {
+  color: var(--brand);
+}
+.social:hover span {
+  text-decoration: underline;
+}
+
 .rowTools {
   display: flex;
   flex-wrap: wrap;

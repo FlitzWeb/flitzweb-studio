@@ -73,6 +73,11 @@ export function ClientForm({ client, defaultStage = "client" }: { client?: Clien
             ]}
           />
         </div>
+        <div className={styles.row}>
+          <Field {...f} name="instagram" label="Instagram" initial={client?.instagram} placeholder="naam of link" />
+          <Field {...f} name="tiktok" label="TikTok" initial={client?.tiktok} placeholder="naam of link" />
+        </div>
+        <Field {...f} name="facebook" label="Facebook" initial={client?.facebook} placeholder="paginanaam of link" />
         <Field {...f} name="address" label="Adres" initial={client?.address} placeholder="Straat 1, 5600 AA Eindhoven" />
         <Field {...f} as="textarea" name="notes" label="Notities" initial={client?.notes} />
       </section>
