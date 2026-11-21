@@ -65,15 +65,6 @@
   border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent);
 }
 
-.tiles {
-  margin-top: calc(-1 * var(--space-1));
-}
-
-.delta[data-dir="up"] {
-  color: var(--ok);
-  font-weight: 600;
-}
-
 /* ---------- Goal ---------- */
 
 .goal {
@@ -345,6 +336,38 @@
   align-items: center;
   gap: var(--space-3);
   margin-top: var(--space-4);
+}
+
+/* Tracker cards on the Stats tab: two side by side, an odd last one full width. */
+.trackers {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+@media (min-width: 820px) {
+  .trackers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .trackers > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+.trackerTotal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+}
+.trackerTotal strong {
+  font-size: 1.75rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+.trackerTotal small {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
 }
 
 .trackerRow {

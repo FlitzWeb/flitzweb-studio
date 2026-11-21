@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { TrafficChart } from "@/components/charts/TrafficChart";
 import { BreakdownCard, type BreakdownTab } from "@/features/stats/BreakdownCard";
-import { MetricCard } from "@/features/stats/MetricCard";
 import { MetricsBar } from "@/features/stats/MetricsBar";
 import { PeriodPicker } from "@/features/stats/PeriodPicker";
-import { getSiteStats } from "@/features/stats/queries";
+import { getTrackerStats } from "@/features/stats/queries";
 import styles from "@/features/stats/stats.module.css";
+import { TrackerCard } from "@/features/stats/TrackerCard";
 import { browserLabel, countryLabel, deviceLabel, languageLabel, regionLabel } from "@/lib/analytics/labels";
 import { FilterBar } from "@/features/stats/FilterBar";
 import { parseFilters } from "@/lib/analytics/filters";
@@ -22,7 +22,7 @@ export async function StatsTab({ site, searchParams }: TabProps) {
     getPageviewSeries(site.id, period),
     getBreakdowns(site.id, period),
     getActiveVisitors(site.id),
-    getSiteStats(site.id, site.trackers),
+    getTrackerStats(site.id, site.trackers, period),
     getChannels(site.id, period),
     getEntryExit(site.id, period, "entry"),
     getEntryExit(site.id, period, "exit"),
@@ -82,23 +82,30 @@ export async function StatsTab({ site, searchParams }: TabProps) {
         <TrafficChart points={series} unit={period.unit} />
       </section>
 
-      <div className={styles.columns}>
-        {cards.map((tabs) => (
-          <BreakdownCard key={tabs[0].label} tabs={tabs} />
-        ))}
-      </div>
-
       <div className={styles.sectionHead}>
         <h2 className={styles.h2}>Trackers</h2>
         <Link href={`/sites/${site.id}/tracking`} className="btn btn-sm">
           Trackers beheren
         </Link>
       </div>
-      {trackers
-        .filter((m) => m.trackerId)
-        .map((m) => (
-          <MetricCard key={m.key} metric={m} siteId={site.id} />
+      {trackers.length ? (
+        <div className={styles.trackers}>
+          {trackers.map((t) => (
+            <TrackerCard key={t.id} tracker={t} siteId={site.id} period={period} />
+          ))}
+        </div>
+      ) : (
+        <p className={styles.muted}>Deze site heeft nog geen trackers.</p>
+      )}
+
+      <div className={styles.sectionHead}>
+        <h2 className={styles.h2}>Pagina&apos;s, bronnen en apparaten</h2>
+      </div>
+      <div className={styles.columns}>
+        {cards.map((tabs) => (
+          <BreakdownCard key={tabs[0].label} tabs={tabs} />
         ))}
+      </div>
 
       {/* These tabs are hidden from the tab bar (see registry.ts) but still work. */}
       <p className={styles.moreLinks}>

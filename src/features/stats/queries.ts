@@ -1,88 +1,85 @@
 import "server-only";
-import { and, count, desc, eq, gte, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import { db, events, type Tracker } from "@/db";
-import { PAGEVIEW } from "@/lib/events/record";
-import { addDays, monthStart, todayISO } from "@/lib/dates";
+import { filterSql, type Filter } from "@/lib/analytics/filters";
+import { amsterdamMidnight, type Period } from "@/lib/analytics/periods";
+import { bucketSql, bucketsBetween } from "@/lib/analytics/queries";
+import { monthStart, todayISO } from "@/lib/dates";
 import { countedEvents } from "./source";
 
-const DAY = sql<string>`to_char(${events.occurredAt} at time zone 'Europe/Amsterdam', 'YYYY-MM-DD')`;
-
-export type Metric = {
+export type TrackerStats = {
+  id: number;
   key: string;
   name: string;
   aggregation: "count" | "sum";
   monthlyGoal: number | null;
-  trackerId: number | null;
-};
-
-export type Period = { current: number; previous: number };
-
-export type MetricStats = Metric & {
-  today: Period;
-  week: Period;
-  month30: Period;
+  /** Total in the chosen period, and in the period of the same length before it. */
+  total: number;
+  previous: number;
+  /** This calendar month so far, for the monthly goal (filters don't apply). */
   thisMonth: number;
-  series: { day: string; value: number }[];
+  series: { bucket: string; value: number }[];
 };
 
-/** Pageviews plus each tracker, with today / 7d / 30d vs the previous period, and a 30-day series. */
-export async function getSiteStats(siteId: number, trackers: Tracker[]) {
-  const today = todayISO();
-  const from = addDays(today, -59);
+type Row = { key: string; count: number; sum: number };
 
-  const rows = await db
-    .select({
-      key: events.eventKey,
-      day: DAY,
-      count: count(),
-      sum: sql<number>`coalesce(sum(${events.value}), 0)`.mapWith(Number),
-    })
-    .from(events)
-    .where(
-      and(
-        eq(events.siteId, siteId),
-        // A day of slack; exact Amsterdam days are filtered by `day` below.
-        gte(events.occurredAt, new Date(`${addDays(from, -1)}T00:00:00Z`)),
-        countedEvents(trackers),
-      ),
-    )
-    .groupBy(events.eventKey, DAY);
+/**
+ * Each tracker over the chosen period: total, the previous period, and a series per
+ * hour/day/month. Follows the period and filters like the visitor numbers do.
+ */
+export async function getTrackerStats(siteId: number, trackers: Tracker[], p: Period): Promise<TrackerStats[]> {
+  if (!trackers.length) return [];
 
-  const metrics: Metric[] = [
-    { key: PAGEVIEW, name: "Paginaweergaven", aggregation: "count", monthlyGoal: null, trackerId: null },
-    ...trackers.map((t) => ({
+  const counted = countedEvents(trackers);
+  const where = (from: Date, to: Date, filters: Filter[]) => sql`
+    site_id = ${siteId}
+    and ${inArray(
+      events.eventKey,
+      trackers.map((t) => t.eventKey),
+    )}
+    and occurred_at between ${from.toISOString()} and ${to.toISOString()}
+    ${counted ? sql`and ${counted}` : sql``}
+    ${filterSql(filters)}`;
+  const totals = (from: Date, to: Date, filters: Filter[]) =>
+    db.execute<Row>(sql`
+      select event_key as key, count(*)::int as count, coalesce(sum(value), 0)::float8 as sum
+      from events where ${where(from, to, filters)}
+      group by 1
+    `);
+
+  const hasGoal = trackers.some((t) => t.monthlyGoal);
+  const [series, previous, month] = await Promise.all([
+    db.execute<Row & { bucket: string }>(sql`
+      select event_key as key, ${bucketSql(p.unit)} as bucket,
+        count(*)::int as count, coalesce(sum(value), 0)::float8 as sum
+      from events where ${where(p.from, p.to, p.filters)}
+      group by 1, 2
+    `),
+    totals(p.prevFrom, p.prevTo, p.filters),
+    hasGoal ? totals(amsterdamMidnight(monthStart(todayISO(p.to))), p.to, []) : [],
+  ]);
+
+  const buckets = bucketsBetween(p);
+
+  return trackers.map((t): TrackerStats => {
+    const value = (r: Row) => (t.aggregation === "count" ? r.count : r.sum);
+    const of = (rows: Iterable<Row>) => {
+      for (const r of rows) if (r.key === t.eventKey) return value(r);
+      return 0;
+    };
+    const byBucket = new Map<string, number>();
+    for (const r of series) if (r.key === t.eventKey) byBucket.set(r.bucket, value(r));
+
+    return {
+      id: t.id,
       key: t.eventKey,
       name: t.name,
       aggregation: t.aggregation,
       monthlyGoal: t.monthlyGoal,
-      trackerId: t.id,
-    })),
-  ];
-
-  return metrics.map((m): MetricStats => {
-    const byDay = new Map<string, number>();
-    for (const r of rows) {
-      if (r.key === m.key && r.day >= from) byDay.set(r.day, m.aggregation === "count" ? r.count : r.sum);
-    }
-    // Sum of `days` days ending `endOffset` days before today.
-    const total = (days: number, endOffset = 0) => {
-      let t = 0;
-      for (let i = endOffset; i < endOffset + days; i++) t += byDay.get(addDays(today, -i)) ?? 0;
-      return t;
-    };
-    let thisMonth = 0;
-    for (let d = monthStart(today); d <= today; d = addDays(d, 1)) thisMonth += byDay.get(d) ?? 0;
-
-    return {
-      ...m,
-      today: { current: total(1), previous: total(1, 1) },
-      week: { current: total(7), previous: total(7, 7) },
-      month30: { current: total(30), previous: total(30, 30) },
-      thisMonth,
-      series: Array.from({ length: 30 }, (_, i) => {
-        const day = addDays(today, i - 29);
-        return { day, value: byDay.get(day) ?? 0 };
-      }),
+      total: [...byBucket.values()].reduce((a, b) => a + b, 0),
+      previous: of(previous),
+      thisMonth: of(month),
+      series: buckets.map((bucket) => ({ bucket, value: byBucket.get(bucket) ?? 0 })),
     };
   });
 }

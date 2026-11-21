@@ -81,11 +81,13 @@ const BUCKET: Record<Unit, string> = {
   month: "YYYY-MM",
 };
 
+/** SQL for the Amsterdam hour/day/month an event falls in, as a bucket label. */
+export const bucketSql = (unit: Unit) =>
+  sql.raw(`to_char(date_trunc('${unit}', occurred_at at time zone 'Europe/Amsterdam'), '${BUCKET[unit]}')`);
+
 /** Views and visitors per hour/day/month, with empty buckets filled in. */
 export async function getPageviewSeries(siteId: number, p: Period): Promise<SeriesPoint[]> {
-  const bucket = sql.raw(
-    `to_char(date_trunc('${p.unit}', occurred_at at time zone 'Europe/Amsterdam'), '${BUCKET[p.unit]}')`,
-  );
+  const bucket = bucketSql(p.unit);
   const rows = await db.execute<SeriesPoint>(sql`
     select ${bucket} as bucket,
       count(*)::int as views,
