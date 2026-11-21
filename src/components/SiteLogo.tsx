@@ -13,6 +13,7 @@ export function SiteLogo({
   name,
   size = 32,
   status,
+  plain,
   className,
 }: {
   siteId?: number | null;
@@ -20,6 +21,8 @@ export function SiteLogo({
   size?: number;
   /** Adds a small status dot in the corner. */
   status?: "up" | "down" | "unknown" | "off";
+  /** No white tile behind the logo: it sits straight on the surface (the dock). */
+  plain?: boolean;
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
@@ -41,6 +44,7 @@ export function SiteLogo({
     <span
       className={`${styles.logo} ${className ?? ""}`}
       data-img={showImg || undefined}
+      data-plain={plain || undefined}
       style={{ "--logo-size": `${size}px` } as React.CSSProperties}
       aria-hidden="true"
     >

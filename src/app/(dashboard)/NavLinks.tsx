@@ -78,7 +78,7 @@ export function SideDock({ sites }: { sites: NavSite[] }) {
             aria-current={active ? "page" : undefined}
             aria-label={s.status === "down" ? `${s.name} (offline)` : s.name}
           >
-            <SiteLogo siteId={s.id} name={s.name} size={24} status={s.status} />
+            <SiteLogo siteId={s.id} name={s.name} size={30} status={s.status} plain />
             <span className={styles.dockTip} aria-hidden="true">{s.name}</span>
           </Link>
         );

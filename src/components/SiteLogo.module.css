@@ -25,6 +25,13 @@
   border-radius: inherit;
   object-fit: contain;
 }
+.logo[data-img][data-plain] {
+  background: none;
+  box-shadow: none;
+}
+.logo[data-plain] img {
+  padding: 0;
+}
 
 .status {
   position: absolute;

@@ -383,7 +383,7 @@
     padding-bottom: var(--space-7);
   }
   .stage {
-    padding-left: clamp(56px, 4.6vw, 72px);
+    padding-left: clamp(60px, 4.8vw, 76px);
   }
 }
 
@@ -479,11 +479,21 @@
     max-height: calc(100dvh - var(--top-h) - 80px);
     margin-top: 56px;
     translate: -50% 0;
+    gap: 4px;
+    padding: 6px;
+  }
+  .dockSide .dockLink {
+    min-width: 50px;
+    min-height: 50px;
+  }
+  .dockSide .dockLink svg {
+    width: 21px;
+    height: 21px;
   }
   .dockSide .dockRule {
-    width: 22px;
+    width: 26px;
     height: 1px;
-    margin: 4px 0;
+    margin: 5px 0;
   }
 }
 .dockTip {
