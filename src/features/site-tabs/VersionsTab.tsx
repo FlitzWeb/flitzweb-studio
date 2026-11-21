@@ -1,11 +1,14 @@
 import { ExternalLink, Pencil } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 import { CopyButton } from "@/components/CopyButton";
+import { PanelSkeleton } from "@/components/Skeleton";
 import { messageLink } from "@/features/clients/messageLink";
 import { ApproveConcept, MarkSent, MoveToConcept, PublishConcept, SendConcept } from "@/features/versions/ConceptButtons";
 import styles from "@/features/versions/versions.module.css";
 import { displayHost, formatDate, formatRelative } from "@/lib/format";
 import { compareBranches, hasGithubToken, listBranches, type Comparison } from "@/lib/github";
+import type { SiteWithClient } from "@/lib/sites";
 import type { TabProps } from "./registry";
 import tabStyles from "./tabs.module.css";
 
@@ -39,34 +42,29 @@ export async function VersionsTab({ site }: TabProps) {
     );
   }
 
-  const [diff, loose] = await Promise.all([
-    site.repo ? compareBranches(site.repo, "main", site.conceptBranch) : (null as Comparison | null),
-    site.repo ? looseBranches(site.repo, site.conceptBranch) : [],
-  ]);
-  // Count what a client would call a change (merge commits are left out of the list).
-  const ahead = diff?.ok ? (diff.ahead > 0 ? Math.max(diff.commits.length, 1) : 0) : null;
-  const hasChanges = ahead == null ? Boolean(site.conceptUrl) : ahead > 0;
-  const firstName = site.client.contactPerson?.trim().split(/\s+/)[0];
-  const message = site.conceptUrl
-    ? `Hoi${firstName ? ` ${firstName}` : ""}, de aanpassingen voor ${site.name} staan klaar om te bekijken: ${site.conceptUrl}\nLaat je weten of het zo goed is? Dan zet ik het live. Groet, FlitzWeb`
-    : "";
-  const send = site.conceptUrl ? messageLink(site.client, message, `${site.name}: nieuwe versie om te bekijken`) : null;
-
-  const status = !hasChanges
-    ? { text: "Geen wijzigingen", tone: "plain" }
-    : site.conceptApprovedAt
-      ? { text: `Akkoord op ${formatDate(site.conceptApprovedAt)}`, tone: "ok" }
-      : site.conceptSentAt
-        ? { text: `Wacht op akkoord · verstuurd ${formatRelative(site.conceptSentAt)}`, tone: "warn" }
-        : { text: ahead ? `${ahead} ${ahead === 1 ? "wijziging" : "wijzigingen"} nog niet live` : "Nog niet verstuurd", tone: undefined };
+  // GitHub takes a moment (a second or more with several branches), so the two previews show
+  // at once and what depends on GitHub streams in behind them.
+  const diff = site.repo ? compareBranches(site.repo, "main", site.conceptBranch) : Promise.resolve(null);
 
   return (
     <div className={tabStyles.stack}>
       <div className={styles.grid}>
-        <Version title="Live" badge={{ text: "Wat bezoekers nu zien", tone: "ok" }} url={site.url} />
+        <Version
+          title="Live"
+          badge={
+            <span className="badge" data-tone="ok">
+              Wat bezoekers nu zien
+            </span>
+          }
+          url={site.url}
+        />
         <Version
           title="Concept"
-          badge={status}
+          badge={
+            <Suspense fallback={<span className="badge">GitHub lezen…</span>}>
+              <ConceptBadge site={site} diff={diff} />
+            </Suspense>
+          }
           url={site.conceptUrl}
           empty="Nog geen concept-adres ingevuld. Zet het onder Bewerken → Versies."
         />
@@ -80,83 +78,140 @@ export async function VersionsTab({ site }: TabProps) {
             Instellingen
           </Link>
         </div>
-
-        {!site.repo ? (
-          <p className={styles.note}>Vul de GitHub-repo in om hier de wijzigingen te zien en met één knop live te zetten.</p>
-        ) : diff && !diff.ok ? (
-          <p className={styles.note} data-tone="warn">
-            {reasons[diff.reason](site.conceptBranch)}
-          </p>
-        ) : diff?.ok && diff.ahead === 0 ? (
-          <p className={styles.note}>Het concept is gelijk aan de live site. Push nieuwe wijzigingen naar “{site.conceptBranch}” en ze verschijnen hier.</p>
-        ) : diff?.ok ? (
-          <>
-            <ul className={styles.changes}>
-              {diff.commits.slice(0, 12).map((c) => (
-                <li key={c.sha}>
-                  <span>{c.message}</span>
-                  {c.date && <time dateTime={c.date}>{formatDate(c.date)}</time>}
-                </li>
-              ))}
-            </ul>
-            <p className={styles.note}>
-              {diff.files.length} {diff.files.length === 1 ? "bestand" : "bestanden"} aangepast
-              {diff.commits.length > 12 && ` · en nog ${diff.commits.length - 12} eerdere wijzigingen`}
-            </p>
-            {diff.behind > 0 && (
-              <p className={styles.note} data-tone="warn">
-                De live site heeft {diff.behind} {diff.behind === 1 ? "wijziging" : "wijzigingen"} die nog niet in het concept zit. Bij live
-                zetten worden ze samengevoegd.
-              </p>
-            )}
-          </>
-        ) : null}
-
-        {hasChanges && (
-          <div className={styles.tools}>
-            {site.conceptUrl && <CopyButton text={site.conceptUrl} label="Kopieer link" />}
-            {send && <SendConcept siteId={site.id} href={send.href} channel={send.channel} />}
-            {site.conceptUrl && !site.conceptSentAt && <MarkSent siteId={site.id} />}
-            {(site.conceptSentAt || site.conceptApprovedAt) && <ApproveConcept siteId={site.id} approved={Boolean(site.conceptApprovedAt)} />}
-            {site.repo && diff?.ok && diff.ahead > 0 && hasGithubToken() && (
-              <PublishConcept siteId={site.id} siteName={site.name} count={ahead ?? diff.ahead} />
-            )}
-          </div>
-        )}
-        {site.repo && diff?.ok && diff.ahead > 0 && !hasGithubToken() && (
-          <p className={styles.note}>“Zet live” verschijnt hier zodra de Studio een GitHub-sleutel heeft (GITHUB_TOKEN). Tot die tijd merge je zelf naar main.</p>
-        )}
+        <Suspense fallback={<PanelSkeleton />}>
+          <Changes site={site} diff={diff} />
+        </Suspense>
       </section>
 
-      {loose.length > 0 && (
-        <section className={tabStyles.panel}>
-          <div className={styles.head}>
-            <h2>Wijzigingen op een andere branch</h2>
-          </div>
-          <p className={styles.note}>
-            De Studio toont alleen wat op “{site.conceptBranch}” staat, want daar hoort het vaste adres voor de klant bij. Dit werk staat op een
-            eigen branch en is dus nog niet te zien in het concept.
-          </p>
+      {site.repo && (
+        <Suspense fallback={null}>
+          <LooseBranches site={site} repo={site.repo} />
+        </Suspense>
+      )}
+    </div>
+  );
+}
+
+type DiffPromise = Promise<Comparison | null>;
+
+/** How many changes a client would count (merge commits are left out of the list), or null without GitHub. */
+function changeCount(diff: Comparison | null) {
+  return diff?.ok ? (diff.ahead > 0 ? Math.max(diff.commits.length, 1) : 0) : null;
+}
+const hasChanges = (site: SiteWithClient, diff: Comparison | null) => {
+  const ahead = changeCount(diff);
+  return ahead == null ? Boolean(site.conceptUrl) : ahead > 0;
+};
+
+async function ConceptBadge({ site, diff: diffPromise }: { site: SiteWithClient; diff: DiffPromise }) {
+  const diff = await diffPromise;
+  const ahead = changeCount(diff);
+  const status = !hasChanges(site, diff)
+    ? { text: "Geen wijzigingen", tone: "plain" }
+    : site.conceptApprovedAt
+      ? { text: `Akkoord op ${formatDate(site.conceptApprovedAt)}`, tone: "ok" }
+      : site.conceptSentAt
+        ? { text: `Wacht op akkoord · verstuurd ${formatRelative(site.conceptSentAt)}`, tone: "warn" }
+        : { text: ahead ? `${ahead} ${ahead === 1 ? "wijziging" : "wijzigingen"} nog niet live` : "Nog niet verstuurd", tone: undefined };
+  return (
+    <span className="badge" data-tone={status.tone}>
+      {status.text}
+    </span>
+  );
+}
+
+/** The commits on the concept branch, and the buttons to send, approve and publish. */
+async function Changes({ site, diff: diffPromise }: { site: SiteWithClient; diff: DiffPromise }) {
+  const diff = await diffPromise;
+  const ahead = changeCount(diff);
+  const firstName = site.client.contactPerson?.trim().split(/\s+/)[0];
+  const message = site.conceptUrl
+    ? `Hoi${firstName ? ` ${firstName}` : ""}, de aanpassingen voor ${site.name} staan klaar om te bekijken: ${site.conceptUrl}\nLaat je weten of het zo goed is? Dan zet ik het live. Groet, FlitzWeb`
+    : "";
+  const send = site.conceptUrl ? messageLink(site.client, message, `${site.name}: nieuwe versie om te bekijken`) : null;
+
+  return (
+    <>
+      {!site.repo ? (
+        <p className={styles.note}>Vul de GitHub-repo in om hier de wijzigingen te zien en met één knop live te zetten.</p>
+      ) : diff && !diff.ok ? (
+        <p className={styles.note} data-tone="warn">
+          {reasons[diff.reason](site.conceptBranch)}
+        </p>
+      ) : diff?.ok && diff.ahead === 0 ? (
+        <p className={styles.note}>Het concept is gelijk aan de live site. Push nieuwe wijzigingen naar “{site.conceptBranch}” en ze verschijnen hier.</p>
+      ) : diff?.ok ? (
+        <>
           <ul className={styles.changes}>
-            {loose.map((b) => (
-              <li key={b.name}>
-                <span>
-                  <strong>{b.name}</strong> · {b.ahead} {b.ahead === 1 ? "wijziging" : "wijzigingen"}
-                  {b.last && `: ${b.last}`}
-                </span>
-                {hasGithubToken() && <MoveToConcept siteId={site.id} branch={b.name} />}
+            {diff.commits.slice(0, 12).map((c) => (
+              <li key={c.sha}>
+                <span>{c.message}</span>
+                {c.date && <time dateTime={c.date}>{formatDate(c.date)}</time>}
               </li>
             ))}
           </ul>
-          {!hasGithubToken() && (
-            <p className={styles.note}>
-              Zet het op het concept door de branch in “{site.conceptBranch}” te mergen en te pushen (of push je werk direct naar “
-              {site.conceptBranch}”). Met een GitHub-sleutel verschijnt hier een knop die dat voor je doet.
+          <p className={styles.note}>
+            {diff.files.length} {diff.files.length === 1 ? "bestand" : "bestanden"} aangepast
+            {diff.commits.length > 12 && ` · en nog ${diff.commits.length - 12} eerdere wijzigingen`}
+          </p>
+          {diff.behind > 0 && (
+            <p className={styles.note} data-tone="warn">
+              De live site heeft {diff.behind} {diff.behind === 1 ? "wijziging" : "wijzigingen"} die nog niet in het concept zit. Bij live
+              zetten worden ze samengevoegd.
             </p>
           )}
-        </section>
+        </>
+      ) : null}
+
+      {hasChanges(site, diff) && (
+        <div className={styles.tools}>
+          {site.conceptUrl && <CopyButton text={site.conceptUrl} label="Kopieer link" />}
+          {send && <SendConcept siteId={site.id} href={send.href} channel={send.channel} />}
+          {site.conceptUrl && !site.conceptSentAt && <MarkSent siteId={site.id} />}
+          {(site.conceptSentAt || site.conceptApprovedAt) && <ApproveConcept siteId={site.id} approved={Boolean(site.conceptApprovedAt)} />}
+          {site.repo && diff?.ok && diff.ahead > 0 && hasGithubToken() && (
+            <PublishConcept siteId={site.id} siteName={site.name} count={ahead ?? diff.ahead} />
+          )}
+        </div>
       )}
-    </div>
+      {site.repo && diff?.ok && diff.ahead > 0 && !hasGithubToken() && (
+        <p className={styles.note}>“Zet live” verschijnt hier zodra de Studio een GitHub-sleutel heeft (GITHUB_TOKEN). Tot die tijd merge je zelf naar main.</p>
+      )}
+    </>
+  );
+}
+
+/** Work on other branches that is neither live nor on the concept yet. Hidden when there is none. */
+async function LooseBranches({ site, repo }: { site: SiteWithClient; repo: string }) {
+  const loose = await looseBranches(repo, site.conceptBranch);
+  if (!loose.length) return null;
+  return (
+    <section className={tabStyles.panel}>
+      <div className={styles.head}>
+        <h2>Wijzigingen op een andere branch</h2>
+      </div>
+      <p className={styles.note}>
+        De Studio toont alleen wat op “{site.conceptBranch}” staat, want daar hoort het vaste adres voor de klant bij. Dit werk staat op een
+        eigen branch en is dus nog niet te zien in het concept.
+      </p>
+      <ul className={styles.changes}>
+        {loose.map((b) => (
+          <li key={b.name}>
+            <span>
+              <strong>{b.name}</strong> · {b.ahead} {b.ahead === 1 ? "wijziging" : "wijzigingen"}
+              {b.last && `: ${b.last}`}
+            </span>
+            {hasGithubToken() && <MoveToConcept siteId={site.id} branch={b.name} />}
+          </li>
+        ))}
+      </ul>
+      {!hasGithubToken() && (
+        <p className={styles.note}>
+          Zet het op het concept door de branch in “{site.conceptBranch}” te mergen en te pushen (of push je werk direct naar “
+          {site.conceptBranch}”). Met een GitHub-sleutel verschijnt hier een knop die dat voor je doet.
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -186,7 +241,7 @@ function Version({
   empty,
 }: {
   title: string;
-  badge: { text: string; tone?: string };
+  badge: React.ReactNode;
   url: string | null;
   empty?: string;
 }) {
@@ -201,9 +256,7 @@ function Version({
             </a>
           )}
         </div>
-        <span className="badge" data-tone={badge.tone}>
-          {badge.text}
-        </span>
+        {badge}
       </div>
       <div className={styles.frame}>
         {url ? (

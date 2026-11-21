@@ -14,7 +14,7 @@ import { SiteTable } from "@/features/uptime/SiteTable";
 import { addDays, formatDue, todayISO } from "@/lib/dates";
 import { formatDuration, formatEuro, formatRelative } from "@/lib/format";
 import { getSiteOverviews } from "@/lib/uptime/queries";
-import styles from "./overview.module.css";
+import styles from "../overview.module.css";
 import { requireSession } from "@/lib/auth";
 
 const dayFmt = new Intl.DateTimeFormat("nl-NL", { timeZone: "Europe/Amsterdam", weekday: "long", day: "numeric", month: "long" });

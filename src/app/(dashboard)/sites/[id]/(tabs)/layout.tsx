@@ -1,44 +1,34 @@
 import { ExternalLink, Pencil } from "lucide-react";
-import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AutoRefresh } from "@/components/AutoRefresh";
-import { KeepActiveTabVisible } from "@/features/site-tabs/KeepActiveTabVisible";
+import { SiteLogo } from "@/components/SiteLogo";
+import { SiteTabBar } from "@/features/site-tabs/SiteTabBar";
 import { tabsFor } from "@/features/site-tabs/registry";
 import { siteStatusLabels } from "@/features/sites/schema";
 import { statusLabel, statusOf } from "@/features/uptime/StatusDot";
+import { requireSession } from "@/lib/auth";
 import { displayHost } from "@/lib/format";
 import { getSite } from "@/lib/sites";
 import styles from "./site.module.css";
-import { SiteLogo } from "@/components/SiteLogo";
-import { requireSession } from "@/lib/auth";
 
-type Props = {
-  params: Promise<{ id: string; tab?: string[] }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
-
-async function load(params: Props["params"]) {
-  const { id, tab = [] } = await params;
+/**
+ * The site header and tab bar. A layout, so they stay on screen while you switch tabs:
+ * only the tab below is rendered again, and loading.tsx shows a skeleton the moment you click.
+ */
+export default async function SiteLayout({
+  params,
+  children,
+}: {
+  params: Promise<{ id: string }>;
+  children: React.ReactNode;
+}) {
+  await requireSession();
+  const { id } = await params;
   const site = Number.isInteger(Number(id)) ? await getSite(Number(id)) : undefined;
-  if (!site || tab.length > 1) notFound();
-  const tabs = tabsFor(site);
-  const active = tabs.find((t) => t.slug === (tab[0] ?? ""));
-  if (!active) notFound();
-  // A hidden tab opened by URL still gets its place in the bar while you are on it.
-  return { site, tabs: tabs.filter((t) => !t.hidden || t === active), active };
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { site } = await load(params);
-  return { title: site.name };
-}
-
-export default async function SitePage({ params, searchParams }: Props) {
-  await requireSession(); // the real check (the proxy only redirects early)
-  const { site, tabs, active } = await load(params);
-  const Tab = active.component;
+  if (!site) notFound();
   const status = statusOf({ monitored: site.status === "live", isUp: site.isUp });
+  const tabs = tabsFor(site).map((t) => ({ slug: t.slug, label: t.label, hidden: Boolean(t.hidden) }));
 
   return (
     <>
@@ -72,22 +62,9 @@ export default async function SitePage({ params, searchParams }: Props) {
         </div>
       </header>
 
-      <nav className={styles.tabs} aria-label="Onderdelen">
-        <KeepActiveTabVisible />
-        {tabs.map((t) => (
-          <Link
-            key={t.slug}
-            href={`/sites/${site.id}${t.slug ? `/${t.slug}` : ""}`}
-            className={styles.tab}
-            aria-current={t === active ? "page" : undefined}
-            scroll={false}
-          >
-            {t.label}
-          </Link>
-        ))}
-      </nav>
+      <SiteTabBar siteId={site.id} tabs={tabs} />
 
-      <Tab site={site} searchParams={await searchParams} />
+      {children}
     </>
   );
 }
