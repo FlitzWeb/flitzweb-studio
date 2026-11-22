@@ -100,7 +100,7 @@ export default async function OverviewPage() {
               </span>
             )
           }
-          hint={sites.length > live.length ? `${sites.length - live.length} niet gemonitord` : "Elke 5 minuten gecheckt"}
+          hint={sites.length > live.length ? `${sites.length - live.length} niet gemonitord` : "Elke 30 minuten gecheckt"}
         />
       </section>
 
