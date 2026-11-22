@@ -6,8 +6,10 @@ import { redirect } from "next/navigation";
 import { clients, contactLog, db } from "@/db";
 import { requireSession } from "@/lib/auth";
 import { addDays, todayISO } from "@/lib/dates";
+import { phoneDigits } from "@/lib/phone";
 import { parseForm, type FormState } from "@/lib/forms";
 import { parseLeadSheet } from "./importLeads";
+import { parseResearchFile, type ResearchLead } from "./importResearch";
 import { clientSchema, contactSchema } from "./schema";
 import { isStage, type Stage } from "./stages";
 
@@ -62,7 +64,7 @@ export async function setFollowUp(id: number, date: string | null) {
   revalidatePath("/", "layout");
 }
 
-const defaultBody = { whatsapp: "WhatsApp gestuurd", phone: "Gebeld", email: "E-mail gestuurd", meeting: "Afspraak gehad", note: "" };
+const defaultBody = { whatsapp: "WhatsApp gestuurd", phone: "Gebeld", email: "E-mail gestuurd", meeting: "Afspraak gehad", visit: "Langs geweest", note: "" };
 
 /**
  * Logs a contact moment. Can also plan the next follow-up, and a fresh lead
@@ -118,4 +120,145 @@ export async function importLeads(_prev: ImportState, formData: FormData): Promi
   }
   revalidatePath("/", "layout");
   return { added: fresh.length, skipped: rows.length - fresh.length };
+}
+
+/** A door visit from the Looproute: one tap, and a fresh lead moves to "Benaderd". */
+export async function logVisit(clientId: number) {
+  await requireSession();
+  const client = await db.query.clients.findFirst({ where: eq(clients.id, clientId), columns: { stage: true } });
+  if (!client) return;
+  await db.insert(contactLog).values({ clientId, kind: "visit", body: defaultBody.visit, occurredOn: todayISO() });
+  if (client.stage === "lead") await db.update(clients).set({ stage: "contacted" }).where(eq(clients.id, clientId));
+  revalidatePath("/", "layout");
+}
+
+export type ResearchImportState = { added?: number; updated?: number; skipped?: number; error?: string };
+
+/**
+ * Imports a run of the leads skill. A business that is already here (same Maps
+ * place, else same name, else same phone number) only gets the research filled
+ * in: its stage, follow-up date, notes and contact log are left alone. Real
+ * clients are skipped.
+ */
+export async function importResearch(_prev: ResearchImportState, formData: FormData): Promise<ResearchImportState> {
+  await requireSession();
+  const { file, error } = parseResearchFile(String(formData.get("research") ?? ""));
+  if (!file) return { error };
+
+  const existing = await db
+    .select({
+      id: clients.id,
+      name: clients.name,
+      stage: clients.stage,
+      placeId: clients.placeId,
+      phone: clients.phone,
+      industry: clients.industry,
+      address: clients.address,
+      email: clients.email,
+      instagram: clients.instagram,
+      facebook: clients.facebook,
+      tiktok: clients.tiktok,
+    })
+    .from(clients);
+  type Known = (typeof existing)[number];
+  const key = (name: string) => name.trim().toLowerCase();
+  const byPlace = new Map<string, Known>();
+  const byName = new Map<string, Known>();
+  const byPhone = new Map<string, Known>();
+  for (const c of existing) {
+    if (c.placeId) byPlace.set(c.placeId, c);
+    byName.set(key(c.name), c);
+    const digits = phoneDigits(c.phone);
+    if (digits) byPhone.set(digits, c);
+  }
+  // Two branches can share a name or a number: a match on those only counts
+  // when it does not point at a different Maps place.
+  const samePlace = (c: Known | undefined, lead: ResearchLead) =>
+    c && (!c.placeId || !lead.placeId || c.placeId === lead.placeId) ? c : undefined;
+  const find = (lead: ResearchLead) => {
+    const digits = phoneDigits(lead.phone);
+    return (
+      (lead.placeId ? byPlace.get(lead.placeId) : undefined) ??
+      samePlace(byName.get(key(lead.name)), lead) ??
+      samePlace(digits ? byPhone.get(digits) : undefined, lead)
+    );
+  };
+
+  const research = (lead: ResearchLead) => ({
+    websiteStatus: lead.websiteStatus,
+    rating: lead.rating,
+    reviewCount: lead.reviewCount,
+    leadScore: lead.score,
+    leadTier: lead.tier,
+    leadHook: lead.hook,
+    leadEvidence: lead.evidence,
+    openerDoor: lead.openerDoor,
+    openerDm: lead.openerDm,
+    openerMail: lead.openerMail,
+    websiteUrl: lead.websiteUrl,
+    mapsUrl: lead.mapsUrl,
+    placeId: lead.placeId,
+    leadSource: file.label,
+    researchedOn: file.date,
+    routeName: lead.routeOrder ? file.routeName : null,
+    routeOrder: lead.routeOrder,
+  });
+
+  let added = 0;
+  let updated = 0;
+  let skipped = 0;
+  await db.transaction(async (tx) => {
+    for (const lead of file.leads) {
+      const match = find(lead);
+      if (match?.stage === "client") {
+        skipped++;
+        continue;
+      }
+      if (match) {
+        await tx
+          .update(clients)
+          .set({
+            ...research(lead),
+            // Contact details: only where nothing was filled in yet.
+            industry: match.industry ?? lead.industry,
+            address: match.address ?? lead.address,
+            phone: match.phone ?? lead.phone,
+            email: match.email ?? lead.email,
+            instagram: match.instagram ?? lead.instagram,
+            facebook: match.facebook ?? lead.facebook,
+            tiktok: match.tiktok ?? lead.tiktok,
+          })
+          .where(eq(clients.id, match.id));
+        match.placeId = lead.placeId ?? match.placeId;
+        if (match.placeId) byPlace.set(match.placeId, match);
+        updated++;
+        continue;
+      }
+      const [row] = await tx
+        .insert(clients)
+        .values({
+          ...research(lead),
+          name: lead.name,
+          businessName: lead.name,
+          stage: "lead",
+          billingType: "paying",
+          industry: lead.industry,
+          address: lead.address,
+          phone: lead.phone,
+          email: lead.email,
+          instagram: lead.instagram,
+          facebook: lead.facebook,
+          tiktok: lead.tiktok,
+          notes: lead.note,
+        })
+        .returning({ id: clients.id });
+      // Known from here on, so the same business twice in one file is not added twice.
+      const fresh: Known = { id: row.id, name: lead.name, stage: "lead", placeId: lead.placeId, phone: lead.phone, industry: lead.industry, address: lead.address, email: lead.email, instagram: lead.instagram, facebook: lead.facebook, tiktok: lead.tiktok };
+      if (lead.placeId) byPlace.set(lead.placeId, fresh);
+      else byName.set(key(lead.name), fresh);
+      added++;
+    }
+  });
+  revalidatePath("/", "layout");
+  return { added, updated, skipped };
 }

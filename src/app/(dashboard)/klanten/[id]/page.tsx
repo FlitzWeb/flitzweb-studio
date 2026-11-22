@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ContactCard } from "@/features/clients/ContactCard";
 import { ContactLog } from "@/features/clients/ContactLog";
+import { LeadResearchCard } from "@/features/clients/LeadResearchCard";
 import { PipelineCard } from "@/features/clients/PipelineCard";
 import { getClient } from "@/features/clients/queries";
 import { stageLabels, stageTone } from "@/features/clients/stages";
@@ -73,6 +74,7 @@ export default async function ClientPage({ params }: Props) {
 
       <div className={styles.stack}>
         <PipelineCard client={client} today={todayISO()} />
+        {(client.leadTier || client.leadHook) && <LeadResearchCard client={client} />}
         <ContactCard client={client} />
         <ContactLog client={client} today={todayISO()} />
       </div>

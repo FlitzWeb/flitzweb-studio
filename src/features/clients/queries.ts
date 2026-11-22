@@ -31,21 +31,39 @@ export function getClientOptions() {
 
 /**
  * Everyone in the pipeline who is not a client yet, with their latest contact
- * moment. Due follow-ups first, then by date, then leads without a date.
+ * moment. Due follow-ups first (oldest on top), then the best lead score,
+ * then a planned follow-up, then by name.
  */
-export async function getLeads(stages: Stage[] = OPEN_STAGES) {
+export async function getLeads(stages: Stage[] = OPEN_STAGES, today = todayISO()) {
   const rows = await db.query.clients.findMany({
     where: inArray(clients.stage, stages),
     with: { contactLog: { orderBy: [desc(contactLog.occurredOn), desc(contactLog.id)], limit: 1 } },
   });
+  const due = (d: string | null) => (d && d <= today ? d : null);
   return rows
     .map(({ contactLog: log, ...c }) => ({ ...c, lastContact: log[0] ?? null }))
     .sort(
       (a, b) =>
-        (a.nextFollowUp ?? "9999").localeCompare(b.nextFollowUp ?? "9999") || a.name.localeCompare(b.name, "nl"),
+        (due(a.nextFollowUp) ?? "9999").localeCompare(due(b.nextFollowUp) ?? "9999") ||
+        (b.leadScore ?? -1) - (a.leadScore ?? -1) ||
+        (a.nextFollowUp ?? "9999").localeCompare(b.nextFollowUp ?? "9999") ||
+        a.name.localeCompare(b.name, "nl"),
     );
 }
 export type Lead = Awaited<ReturnType<typeof getLeads>>[number];
+
+/**
+ * The door-to-door walk: every lead with a place in a route, in walking order.
+ * Leads that dropped out stay in, so the numbering matches the street.
+ */
+export async function getRouteLeads() {
+  const rows = await db.query.clients.findMany({
+    where: and(isNotNull(clients.routeOrder), ne(clients.stage, "client")),
+    orderBy: [asc(clients.routeName), asc(clients.routeOrder), asc(clients.name)],
+    with: { contactLog: { orderBy: [desc(contactLog.occurredOn), desc(contactLog.id)], limit: 1 } },
+  });
+  return rows.map(({ contactLog: log, ...c }) => ({ ...c, lastContact: log[0] ?? null }));
+}
 
 /** How many businesses sit in each stage. */
 export async function getStageCounts() {

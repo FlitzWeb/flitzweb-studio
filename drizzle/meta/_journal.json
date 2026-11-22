@@ -127,6 +127,13 @@
       "when": 1795224451977,
       "tag": "0017_lead_socials",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1795359713421,
+      "tag": "0018_lead_research",
+      "breakpoints": true
     }
   ]
 }

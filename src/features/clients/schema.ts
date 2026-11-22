@@ -42,7 +42,7 @@ export const clientSchema = z.object({
 });
 
 export const contactSchema = z.object({
-  kind: z.enum(["whatsapp", "phone", "email", "meeting", "note"]),
+  kind: z.enum(["whatsapp", "phone", "email", "meeting", "visit", "note"]),
   body: optionalText,
   occurredOn: z.iso.date({ message: "Kies een datum" }),
   // "" = leave the follow-up date alone, "none" = clear it, a number = days from today.

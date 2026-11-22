@@ -30,6 +30,23 @@ export const contactKindLabels = {
   phone: "Gebeld",
   email: "E-mail",
   meeting: "Afspraak",
+  visit: "Langs geweest",
   note: "Notitie",
 } as const;
 export type ContactKind = keyof typeof contactKindLabels;
+
+/** Lead tiers from the leads skill: A = go first, C = only when you are nearby anyway. */
+export const TIERS = ["A", "B", "C"] as const;
+export type Tier = (typeof TIERS)[number];
+export const isTier = (v: unknown): v is Tier => typeof v === "string" && (TIERS as readonly string[]).includes(v);
+export const tierTone: Record<Tier, "ok" | "warn" | "plain"> = { A: "ok", B: "warn", C: "plain" };
+
+/**
+ * The hook for a list row, where the reviews and "website now" already sit
+ * next to it: drops the "4,6 sterren (96 reviews), " start and returns null
+ * when nothing new is left ("geen eigen website").
+ */
+export function hookDetail(hook: string | null): string | null {
+  const rest = hook?.replace(/^[\d,.]+ sterren \(\d+ reviews\), /, "") ?? "";
+  return rest && rest !== "geen eigen website" ? rest : null;
+}

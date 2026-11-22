@@ -12,6 +12,7 @@ import {
   pgEnum,
   pgTable,
   primaryKey,
+  real,
   text,
   timestamp,
   uniqueIndex,
@@ -64,11 +65,30 @@ export const clients = pgTable("clients", {
   instagram: text(),
   facebook: text(),
   tiktok: text(),
+  // Lead research, filled by importing a run of the leads skill
+  // (features/clients/importResearch.ts). Never typed in by hand.
+  rating: real(), // Google stars, 1.0 – 5.0
+  reviewCount: integer("review_count"),
+  leadScore: integer("lead_score"), // 0 – 100
+  leadTier: text("lead_tier"), // "A" | "B" | "C"
+  leadHook: text("lead_hook"), // the one line to open with
+  leadEvidence: text("lead_evidence"), // what the check found, "; " separated
+  openerDoor: text("opener_door"),
+  openerDm: text("opener_dm"),
+  openerMail: text("opener_mail"), // first line "Onderwerp: …", then the body
+  websiteUrl: text("website_url"), // the link they have now (own site, Facebook, a directory…)
+  mapsUrl: text("maps_url"),
+  placeId: text("place_id"), // Google Maps place id: how a re-import finds the same business
+  leadSource: text("lead_source"), // which run found it
+  researchedOn: date("researched_on"),
+  // Door-to-door: the name of the walk and this lead's position in it.
+  routeName: text("route_name"),
+  routeOrder: integer("route_order"),
   createdAt: createdAt(),
 });
 
 /** One line per contact moment with a lead or client. */
-export const contactKind = pgEnum("contact_kind", ["whatsapp", "phone", "email", "meeting", "note"]);
+export const contactKind = pgEnum("contact_kind", ["whatsapp", "phone", "email", "meeting", "visit", "note"]);
 
 export const contactLog = pgTable(
   "contact_log",

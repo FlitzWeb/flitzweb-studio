@@ -35,6 +35,12 @@ export const formatDateTime = (d: Date | string) =>
   dateTimeFmt.format(new Date(d));
 export const formatTime = (d: Date | string) => timeFmt.format(new Date(d));
 
+const ratingFmt = new Intl.NumberFormat("nl-NL", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/** Google reviews: "4,6 ★ (96)". Empty when there are none. */
+export const formatRating = (rating: number | null | undefined, reviews: number | null | undefined) =>
+  rating != null && reviews ? `${ratingFmt.format(rating)} ★ (${reviews})` : "";
+
 /** Money is stored as integer cents. */
 export const formatEuro = (cents: number) => euroFmt.format(cents / 100);
 

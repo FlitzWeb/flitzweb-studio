@@ -49,6 +49,14 @@
   line-height: 1.2;
 }
 
+/* A second form on the same page ("or do it this way"). */
+.orTitle {
+  margin: var(--space-6) 0 var(--space-4);
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--ink-2);
+}
+
 .danger {
   display: flex;
   justify-content: flex-end;
