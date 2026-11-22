@@ -7,8 +7,17 @@ import WebKit
 final class StudioWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
     let window: NSWindow
     let webView: WKWebView
+    /// The page sits in a rounded, hairline-edged card with a little of the window around it,
+    /// so it reads as the app's screen and not as a web page cut off by the window's edge.
+    private let card = NSView()
+    private var cardTop: NSLayoutConstraint?
+    private static let margin: CGFloat = 8
+    private static let cardRadius: CGFloat = 11
     private let hint = Hint()
     private weak var intro: Intro?
+    private var badgeTimer: Timer?
+    /// The sites that are offline, by name (for the Dock badge and the Dock menu).
+    private(set) var sitesDown: [String] = []
     private var observations: [NSKeyValueObservation] = []
     private var loaded = false
     private var downloads: [ObjectIdentifier: URL] = [:]
@@ -25,11 +34,26 @@ final class StudioWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUI
         config.applicationNameForUserAgent = "FlitzWebStudioMac/0.1"
         config.preferences.isElementFullscreenEnabled = true
         // The page stops dead at its top and bottom, like an app, instead of stretching past
-        // them and springing back. Added as a sheet of its own, so the page's own markup (which
-        // React checks against the server's) is left alone.
+        // them and springing back. And its scrollbar is a thin rounded thumb in the page's own
+        // tone with no track, where the Mac's wide light one looked pasted onto the dark page.
+        // Added as a sheet of its own, so the page's own markup (which React checks against the
+        // server's) is left alone.
         config.userContentController.addUserScript(WKUserScript(source: """
             (() => {
-              const css = 'html, body { overscroll-behavior: none; }';
+              const css = `
+                html, body { overscroll-behavior: none; }
+                ::-webkit-scrollbar { width: 11px; height: 11px; }
+                ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+                ::-webkit-scrollbar-thumb {
+                  background: rgb(255 255 255 / 0.2);
+                  background-clip: content-box;
+                  border: 3px solid transparent;
+                  border-radius: 999px;
+                }
+                ::-webkit-scrollbar-thumb:hover { background-color: rgb(255 255 255 / 0.34); }
+                html[data-theme="light"] ::-webkit-scrollbar-thumb { background-color: rgb(15 23 42 / 0.24); }
+                html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background-color: rgb(15 23 42 / 0.4); }
+              `;
               try {
                 const sheet = new CSSStyleSheet();
                 sheet.replaceSync(css);
@@ -58,36 +82,50 @@ final class StudioWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUI
         webView.setValue(false, forKey: "drawsBackground")
         if #available(macOS 13.3, *) { webView.isInspectable = true }
 
-        // The title bar is a plain strip in the page's own background colour, so the window reads
-        // as one surface and the page never sits under the window buttons.
+        // The title bar is a plain strip in the window's own colour: the page never sits under
+        // the window buttons.
         window.title = "FlitzWeb Studio"
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
-        window.backgroundColor = Self.night
         window.appearance = NSAppearance(named: .darkAqua)
 
-        // The content runs up behind the title bar, so the opening can cover the whole window; the
-        // page itself starts below the title bar (the layout guide), clear of the window buttons.
+        // The content runs up behind the title bar, so the opening can cover the whole window. The
+        // page's card starts below the title bar (the layout guide), clear of the window buttons,
+        // and keeps a margin to the other three edges.
         let content = NSView(frame: frame)
         window.contentView = content
+        card.wantsLayer = true
+        card.layer?.cornerRadius = Self.cardRadius
+        card.layer?.cornerCurve = .continuous
+        card.layer?.masksToBounds = true
+        card.layer?.borderWidth = 1
+        card.translatesAutoresizingMaskIntoConstraints = false
+        content.addSubview(card)
         webView.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(webView)
+        card.addSubview(webView)
         hint.translatesAutoresizingMaskIntoConstraints = false
         hint.isHidden = true
         content.addSubview(hint)
-        var constraints = [
-            webView.leadingAnchor.constraint(equalTo: content.leadingAnchor),
-            webView.trailingAnchor.constraint(equalTo: content.trailingAnchor),
-            webView.bottomAnchor.constraint(equalTo: content.bottomAnchor),
-            hint.centerXAnchor.constraint(equalTo: content.centerXAnchor),
-            hint.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -28),
-        ]
+        let top: NSLayoutConstraint
         if let guide = window.contentLayoutGuide as? NSLayoutGuide {
-            constraints.append(webView.topAnchor.constraint(equalTo: guide.topAnchor))
+            top = card.topAnchor.constraint(equalTo: guide.topAnchor)
         } else {
-            constraints.append(webView.topAnchor.constraint(equalTo: content.topAnchor, constant: 28))
+            top = card.topAnchor.constraint(equalTo: content.topAnchor, constant: 28)
         }
-        NSLayoutConstraint.activate(constraints)
+        cardTop = top
+        NSLayoutConstraint.activate([
+            top,
+            card.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: Self.margin),
+            card.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -Self.margin),
+            card.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -Self.margin),
+            webView.topAnchor.constraint(equalTo: card.topAnchor),
+            webView.leadingAnchor.constraint(equalTo: card.leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: card.trailingAnchor),
+            webView.bottomAnchor.constraint(equalTo: card.bottomAnchor),
+            hint.centerXAnchor.constraint(equalTo: content.centerXAnchor),
+            hint.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -36),
+        ])
+        paint(page: Self.night)
         window.contentMinSize = NSSize(width: 380, height: 500)
         window.isReleasedWhenClosed = false
         window.tabbingMode = .disallowed
@@ -165,7 +203,7 @@ final class StudioWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUI
             let top = box[1] + box[3] * 2.38 / 167
             let width = box[2] * 784.94 / 788
             let zoom = Double(self.webView.pageZoom)
-            let frame = self.webView.frame
+            let frame = self.webView.convert(self.webView.bounds, to: self.window.contentView)
             found((topLeft: CGPoint(x: frame.minX + left * zoom, y: frame.maxY - top * zoom), width: width * zoom))
         }
     }
@@ -229,9 +267,68 @@ final class StudioWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUI
 
     private func tint(_ color: NSColor?) {
         guard loaded, let color = color?.usingColorSpace(.sRGB) else { return }
-        let light = 0.2126 * color.redComponent + 0.7152 * color.greenComponent + 0.0722 * color.blueComponent > 0.5
-        window.backgroundColor = color
+        paint(page: color)
+    }
+
+    /// Colours the window around the page from the page's own background: a shade off it (a touch
+    /// of the bolt blue on dark, of ink on light), with a hairline round the card.
+    private func paint(page color: NSColor) {
+        guard let page = color.usingColorSpace(.sRGB) else { return }
+        let light = 0.2126 * page.redComponent + 0.7152 * page.greenComponent + 0.0722 * page.blueComponent > 0.5
+        let bolt = NSColor(srgbRed: 0x7C / 255.0, green: 0x9B / 255.0, blue: 1, alpha: 1)
+        let ink = NSColor(srgbRed: 15 / 255.0, green: 23 / 255.0, blue: 42 / 255.0, alpha: 1)
+        window.backgroundColor = page.blended(withFraction: light ? 0.07 : 0.06, of: light ? ink : bolt) ?? page
         window.appearance = NSAppearance(named: light ? .aqua : .darkAqua)
+        card.layer?.backgroundColor = page.cgColor
+        card.layer?.borderColor = (light ? NSColor(white: 0, alpha: 0.12) : NSColor(white: 1, alpha: 0.13)).cgColor
+    }
+
+    // Full screen has no title bar above the card: it gets the same margin there as on its other sides.
+    func windowDidEnterFullScreen(_ notification: Notification) { cardTop?.constant = Self.margin }
+    func windowDidExitFullScreen(_ notification: Notification) { cardTop?.constant = 0 }
+
+    // ---- Dock badge: how many sites are offline
+
+    /// Asks the Studio which sites are offline (`/api/status`) and shows the count on the Dock
+    /// icon. Asked after every page load, and then again just after the next uptime check is
+    /// due: the database is awake from that check anyway, so the badge costs no database time
+    /// of its own. Never on a short timer (see the route's comment).
+    func refreshBadge() {
+        badgeTimer?.invalidate()
+        guard let url = webView.url, Server.owns(url), !webView.isLoading else { return }
+        let script = """
+        const response = await fetch('/api/status', { cache: 'no-store', credentials: 'same-origin' });
+        if (!response.ok) return null;
+        return await response.json();
+        """
+        webView.callAsyncJavaScript(script, arguments: [:], in: nil, in: .defaultClient) { [weak self] result in
+            guard let self else { return }
+            let status = (try? result.get()) as? [String: Any]
+            // Signed out, or the Studio could not be reached: no badge, and try again with the next page.
+            self.showBadge(status?["down"] as? [String] ?? [])
+            guard let status else { return }
+
+            let checkEvery: TimeInterval = 30 * 60      // how often the uptime check runs
+            var wait = checkEvery
+            let stamp = ISO8601DateFormatter()
+            stamp.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let text = status["checkedAt"] as? String, let checked = stamp.date(from: text) {
+                // A minute after the next check should have run. If that moment has passed (the
+                // check is late or was skipped), wait a whole round instead of asking again soon.
+                let due = checked.addingTimeInterval(checkEvery + 60).timeIntervalSinceNow
+                if due > 60 { wait = min(due, checkEvery + 60) }
+            }
+            self.badgeTimer = Timer.scheduledTimer(withTimeInterval: wait, repeats: false) { [weak self] _ in
+                self?.refreshBadge()
+            }
+        }
+    }
+
+    private func showBadge(_ down: [String]) {
+        // Test aid: `defaults write nl.flitzweb.studio.mac badgeTest -int 2` pretends two sites are down.
+        let pretend = UserDefaults.standard.integer(forKey: "badgeTest")
+        sitesDown = pretend > 0 ? (1...pretend).map { "Testsite \($0)" } : down
+        NSApp.dockTile.badgeLabel = sitesDown.isEmpty ? nil : "\(sitesDown.count)"
     }
 
     // ---- Navigation
@@ -260,6 +357,7 @@ final class StudioWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUI
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         updateHint()
         intro?.pageReady = true
+        refreshBadge()
         onLoaded()
     }
 

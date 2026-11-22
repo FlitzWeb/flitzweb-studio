@@ -12,6 +12,12 @@ Studio (`https://studio.flitzweb.nl`), so a deploy shows up in the app without a
     in the top bar, while the wall behind it thins out slowly.
   - **Z-vloed**: the Z grows until the window is one blue field, which wipes off along the Z's slant.
   - **Vervagen**: a plain fade.
+- **Dock badge.** The Dock icon shows how many sites are offline (nothing when all are online),
+  by the same rule as the "Alles online" pill. Right-click the icon for their names. It asks the
+  Studio (`/api/status`) after every page load and then just after each uptime check is due, so it
+  costs no database time of its own; a site that goes down shows up within about half an hour.
+- **Framed.** The page sits in a rounded card with a hairline edge and a little of the window
+  around it, and its scrollbar is a thin thumb in the page's own tone.
 - **No stretchy scrolling.** A page stops at its top and bottom instead of pulling past them and
   springing back.
 - **Menus and shortcuts.** ⌘1–⌘4 jump to Overzicht, Leads, Klanten and Geld. ⌘R reloads, ⌘[ / ⌘] go
@@ -83,8 +89,10 @@ no opening.
   dialogs, file pickers, downloads, links to other sites.
 - `AppDelegate.swift` builds the menus. The sections in the **Ga** menu are a copy of
   `src/app/(dashboard)/nav.ts`: change both when a section is added.
-- Nothing in the Studio itself knows about the app. There is no Dock badge yet: that needs a small
-  status endpoint in the Studio first.
+- The one thing in the Studio made for the app is `src/app/api/status/route.ts` (the Dock badge).
+  The badge asks again `checkEvery` (30 minutes, in `StudioWindow.swift`) plus a minute after the
+  newest check: change that number if the uptime check's schedule changes. It must stay tied to
+  the check, never a short timer, because every call wakes the database.
 
 ## Testing
 
@@ -107,6 +115,9 @@ defaults write nl.flitzweb.studio.mac introFrom -float 2.35
 ```
 
 `defaults delete nl.flitzweb.studio.mac introSlow` (and the same for `introFrom`) goes back.
+
+`defaults write nl.flitzweb.studio.mac badgeTest -int 2` pretends two sites are offline (reload the
+page with ⌘R to see the badge); delete the key to go back.
 
 The numbers at the top of `Sources/Intro.swift` (where the Z and the wordmark sit in the film) were
 measured in `intro.mp4`; measure them again if the film is cut from a different render. `logo.png`

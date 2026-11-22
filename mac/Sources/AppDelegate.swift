@@ -36,6 +36,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         return true
     }
 
+    /// Right-click on the Dock icon: which sites are offline, by name.
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        guard !studio.sitesDown.isEmpty else { return nil }
+        let menu = NSMenu()
+        menu.addItem(NSMenuItem(title: studio.sitesDown.count == 1 ? "1 site offline" : "\(studio.sitesDown.count) sites offline",
+                                action: nil, keyEquivalent: ""))
+        for name in studio.sitesDown {
+            let entry = NSMenuItem(title: name, action: #selector(showStudio(_:)), keyEquivalent: "")
+            entry.target = self
+            entry.indentationLevel = 1
+            menu.addItem(entry)
+        }
+        return menu
+    }
+
     // ---- Menu actions
 
     @objc private func showStudio(_ sender: Any?) { studio.show() }
