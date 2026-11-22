@@ -100,6 +100,7 @@ final class Intro: NSView {
     private let flyer = CALayer()
     private var observers: [Any] = []
     private var endObserver: NSObjectProtocol?
+    private var filmReady: NSKeyValueObservation?
 
     private var pictureOver = false
     private var flooded = false
@@ -141,6 +142,18 @@ final class Intro: NSView {
             still.actionAtItemEnd = .pause
             wallPlayer = still
             wall.player = still
+            // Kept out of sight until the film itself is on screen: the still is ready a moment
+            // sooner, and would otherwise flash its lit wall before the film's dark first frames.
+            wall.isHidden = true
+            filmReady = video.observe(\.isReadyForDisplay, options: [.initial, .new]) { [weak self] layer, _ in
+                guard layer.isReadyForDisplay else { return }
+                DispatchQueue.main.async {
+                    CATransaction.begin()
+                    CATransaction.setDisableActions(true)
+                    self?.wall.isHidden = false
+                    CATransaction.commit()
+                }
+            }
             stage.addSublayer(wall)
         }
         stage.addSublayer(video)

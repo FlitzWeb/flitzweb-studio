@@ -15,6 +15,7 @@ final class StudioWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUI
     private static let cardRadius: CGFloat = 11
     private let hint = Hint()
     private weak var intro: Intro?
+    private var popups: [Popup] = []
     private var badgeTimer: Timer?
     /// The sites that are offline, by name (for the Dock badge and the Dock menu).
     private(set) var sitesDown: [String] = []
@@ -424,11 +425,18 @@ final class StudioWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUI
 
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
                  for action: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-        if let url = action.request.url {
-            let scheme = url.scheme?.lowercased() ?? ""
-            if Server.owns(url) { webView.load(action.request) }
-            else if ["http", "https", "mailto", "tel"].contains(scheme) { NSWorkspace.shared.open(url) }
+        guard let url = action.request.url else { return nil }
+        let scheme = url.scheme?.lowercased() ?? ""
+        if Server.owns(url) {
+            // A Studio link that wants a new tab (the month report's picture): a window of its own,
+            // so the page here stays put and closing that window is the way back.
+            let popup = Popup(configuration: configuration, over: window)
+            popup.onClose = { [weak self] closed in self?.popups.removeAll { $0 === closed } }
+            popups.append(popup)
+            popup.show()
+            return popup.webView
         }
+        if ["http", "https", "mailto", "tel"].contains(scheme) { NSWorkspace.shared.open(url) }
         return nil
     }
 

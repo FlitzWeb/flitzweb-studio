@@ -24,6 +24,8 @@ Studio (`https://studio.flitzweb.nl`), so a deploy shows up in the app without a
   back and forward, ⌘+ / ⌘- / ⌘0 zoom (remembered), ⌃⌘F is full screen. ⌘K is the Studio's own search.
 - **Closing the window** keeps the app in the Dock. Click the Dock icon (or ⌘N) to bring it back.
 - **Links to other sites** (a client's site, GitHub, a payment page) open in your browser.
+- **The month report's picture** (any Studio link that asks for a new tab) opens in a window of
+  its own. Close it with the red button, ⌘W or Esc and the Studio is where you left it.
 - **Downloads** (the report image) land in Downloads and are shown in Finder.
 - **Light and dark.** The title bar takes the page's background colour, so it follows the theme.
 
