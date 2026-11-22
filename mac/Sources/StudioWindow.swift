@@ -8,6 +8,7 @@ final class StudioWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUI
     let window: NSWindow
     let webView: WKWebView
     private let hint = Hint()
+    private weak var intro: Intro?
     private var observations: [NSKeyValueObservation] = []
     private var loaded = false
     private var downloads: [ObjectIdentifier: URL] = [:]
@@ -23,10 +24,29 @@ final class StudioWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUI
         config.websiteDataStore = .default()
         config.applicationNameForUserAgent = "FlitzWebStudioMac/0.1"
         config.preferences.isElementFullscreenEnabled = true
+        // The page stops dead at its top and bottom, like an app, instead of stretching past
+        // them and springing back. Added as a sheet of its own, so the page's own markup (which
+        // React checks against the server's) is left alone.
+        config.userContentController.addUserScript(WKUserScript(source: """
+            (() => {
+              const css = 'html, body { overscroll-behavior: none; }';
+              try {
+                const sheet = new CSSStyleSheet();
+                sheet.replaceSync(css);
+                document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+              } catch (error) {
+                addEventListener('DOMContentLoaded', () => {
+                  const style = document.createElement('style');
+                  style.textContent = css;
+                  document.head.appendChild(style);
+                });
+              }
+            })()
+            """, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         let frame = NSRect(x: 0, y: 0, width: 1320, height: 860)
         webView = WKWebView(frame: frame, configuration: config)
         window = NSWindow(contentRect: frame,
-                          styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                          styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                           backing: .buffered, defer: false)
         super.init()
 
@@ -46,17 +66,28 @@ final class StudioWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUI
         window.backgroundColor = Self.night
         window.appearance = NSAppearance(named: .darkAqua)
 
+        // The content runs up behind the title bar, so the opening can cover the whole window; the
+        // page itself starts below the title bar (the layout guide), clear of the window buttons.
         let content = NSView(frame: frame)
-        webView.autoresizingMask = [.width, .height]
+        window.contentView = content
+        webView.translatesAutoresizingMaskIntoConstraints = false
         content.addSubview(webView)
         hint.translatesAutoresizingMaskIntoConstraints = false
         hint.isHidden = true
         content.addSubview(hint)
-        NSLayoutConstraint.activate([
+        var constraints = [
+            webView.leadingAnchor.constraint(equalTo: content.leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+            webView.bottomAnchor.constraint(equalTo: content.bottomAnchor),
             hint.centerXAnchor.constraint(equalTo: content.centerXAnchor),
             hint.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -28),
-        ])
-        window.contentView = content
+        ]
+        if let guide = window.contentLayoutGuide as? NSLayoutGuide {
+            constraints.append(webView.topAnchor.constraint(equalTo: guide.topAnchor))
+        } else {
+            constraints.append(webView.topAnchor.constraint(equalTo: content.topAnchor, constant: 28))
+        }
+        NSLayoutConstraint.activate(constraints)
         window.contentMinSize = NSSize(width: 380, height: 500)
         window.isReleasedWhenClosed = false
         window.tabbingMode = .disallowed
@@ -75,6 +106,68 @@ final class StudioWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUI
         observations.append(webView.observe(\.url, options: [.new]) { [weak self] _, _ in
             self?.updateHint()
         })
+    }
+
+    /// Plays the opening over the whole window: once at launch, before the first `show()`, and
+    /// again from the menu (`replay`), then over the page that is already there.
+    func playIntro(replay: Bool = false) {
+        guard intro == nil, replay || !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
+              let content = window.contentView,
+              let film = Intro(file: Bundle.main.url(forResource: "intro", withExtension: "mp4"))
+        else { return }
+        film.findPageLogo = { [weak self] found in
+            guard let self else { return found(nil) }
+            self.findPageLogo(found)
+        }
+        film.setPageLogoHidden = { [weak self] hidden in
+            self?.webView.evaluateJavaScript("""
+                document.querySelectorAll('svg[aria-label="FlitzWeb"]').forEach((mark) => { mark.style.opacity = \(hidden ? "'0'" : "''") })
+                """)
+        }
+        film.translatesAutoresizingMaskIntoConstraints = false
+        content.addSubview(film)
+        NSLayoutConstraint.activate([
+            film.leadingAnchor.constraint(equalTo: content.leadingAnchor),
+            film.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+            film.topAnchor.constraint(equalTo: content.topAnchor),
+            film.bottomAnchor.constraint(equalTo: content.bottomAnchor),
+        ])
+        intro = film
+        if replay {
+            film.pageReady = loaded && !webView.isLoading
+            NSApp.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
+        }
+        film.play()
+    }
+
+    /// Where the page's own wordmark is drawn (the `Logo` component: the first one in view), as
+    /// the opening needs it: the top left corner of the letters and their width, in the content
+    /// view's coordinates.
+    private func findPageLogo(_ found: @escaping (Intro.LogoSpot?) -> Void) {
+        let script = """
+        (() => {
+          const marks = [...document.querySelectorAll('svg[aria-label="FlitzWeb"]')];
+          const mark = marks.find((m) => {
+            const r = m.getBoundingClientRect();
+            return r.width > 0 && r.bottom > 0 && r.top < innerHeight;
+          });
+          if (!mark) return null;
+          const r = mark.getBoundingClientRect();
+          return [r.left, r.top, r.width, r.height];
+        })()
+        """
+        webView.evaluateJavaScript(script) { [weak self] result, _ in
+            guard let self, let box = result as? [Double], box.count == 4 else { return found(nil) }
+            // The svg's box is its viewBox (27 36 788 167); the letters start at 28.52, 38.38
+            // and are 784.94 wide.
+            let left = box[0] + box[2] * 1.52 / 788
+            let top = box[1] + box[3] * 2.38 / 167
+            let width = box[2] * 784.94 / 788
+            let zoom = Double(self.webView.pageZoom)
+            let frame = self.webView.frame
+            found((topLeft: CGPoint(x: frame.minX + left * zoom, y: frame.maxY - top * zoom), width: width * zoom))
+        }
     }
 
     func show() {
@@ -166,10 +259,12 @@ final class StudioWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUI
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         updateHint()
+        intro?.pageReady = true
         onLoaded()
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        intro?.pageReady = true
         let code = (error as NSError).code
         // Cancelled loads (a link handed to the browser, a download) are not failures.
         guard code != NSURLErrorCancelled, code != 102 else { return }

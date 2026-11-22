@@ -20,6 +20,13 @@ done
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/Studio.icns"
 rm -rf "$ICONSET"
 
+# The opening film (see Sources/Intro.swift). Without the file the app simply starts without it.
+# logo.png is the flat wordmark that flies to the top bar in the "Logo naar de balk" hand-over.
+[[ -f intro.mp4 ]] && cp intro.mp4 "$APP/Contents/Resources/"
+[[ -f logo.png ]] && cp logo.png "$APP/Contents/Resources/"
+# wall.mp4 is the film's wall without the logo: what is left behind the logo as it flies.
+[[ -f wall.mp4 ]] && cp wall.mp4 "$APP/Contents/Resources/"
+
 cat > "$APP/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -51,6 +58,7 @@ if [[ "${1:-}" == "install" ]]; then
   rm -rf "/Applications/$NAME.app"
   cp -R "$APP" /Applications/
   touch "/Applications/$NAME.app"     # so Finder and the Dock pick up a new icon
-  open "/Applications/$NAME.app"
+  # Right after a quit the Mac can still refuse to open it (error -600): try a few times.
+  for _ in {1..5}; do open "/Applications/$NAME.app" 2>/dev/null && break; sleep 1; done
   echo "Installed /Applications/$NAME.app"
 fi

@@ -17,6 +17,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         studio = StudioWindow()
         // `--open /leads` starts on that page of the Studio instead of the overview.
         let arguments = CommandLine.arguments
+        // The opening plays once per launch (not in the test modes).
+        if !arguments.contains("--no-intro"), !arguments.contains("--snapshot") { studio.playIntro() }
         if let flag = arguments.firstIndex(of: "--open"), flag + 1 < arguments.count,
            arguments[flag + 1].hasPrefix("/") {
             studio.open(Server.page(arguments[flag + 1]))
@@ -60,8 +62,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         NSApp.sendAction(#selector(NSText.paste(_:)), to: nil, from: sender)
     }
 
+    @objc private func toggleIntroSound(_ sender: Any?) { Intro.soundOn.toggle() }
+    @objc private func replayIntro(_ sender: Any?) { studio.playIntro(replay: true) }
+
+    @objc private func chooseTransition(_ sender: NSMenuItem) {
+        if let raw = sender.representedObject as? String, let choice = Intro.Transition(rawValue: raw) {
+            Intro.Transition.chosen = choice
+        }
+    }
+
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
         switch item.action {
+        case #selector(toggleIntroSound(_:)):
+            item.state = Intro.soundOn ? .on : .off
+            return true
+        case #selector(chooseTransition(_:)):
+            item.state = item.representedObject as? String == Intro.Transition.chosen.rawValue ? .on : .off
+            return true
         case #selector(goBack(_:)): return studio.webView.canGoBack
         case #selector(goForward(_:)): return studio.webView.canGoForward
         default: return true
@@ -91,8 +108,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             return item
         }
 
+        // How the opening hands over to the page.
+        let transitions = NSMenuItem(title: "Overgang", action: nil, keyEquivalent: "")
+        transitions.submenu = NSMenu(title: "Overgang")
+        for choice in Intro.Transition.allCases {
+            let entry = item(choice.title, #selector(chooseTransition(_:)), mine: true)
+            entry.representedObject = choice.rawValue
+            transitions.submenu?.addItem(entry)
+        }
+
         _ = menu(name, [
             item("Over \(name)", #selector(NSApplication.orderFrontStandardAboutPanel(_:))),
+            .separator(),
+            item("Speel opening af", #selector(replayIntro(_:)), "o", [.command, .shift], mine: true),
+            transitions,
+            item("Geluid bij openen", #selector(toggleIntroSound(_:)), mine: true),
             .separator(),
             item("Verberg \(name)", #selector(NSApplication.hide(_:)), "h"),
             item("Verberg andere", #selector(NSApplication.hideOtherApplications(_:)), "h", [.command, .option]),
@@ -168,7 +198,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                     print("page: \(self.studio.webView.url?.absoluteString ?? "-")")
                     print("title: \(self.studio.window.title)")
                     print("saved: \(file.path)")
-                    exit(0)
+                    let probe = "getComputedStyle(document.documentElement).overscrollBehaviorY + ' / ' + getComputedStyle(document.body).overscrollBehaviorY"
+                    self.studio.webView.evaluateJavaScript(probe) { value, _ in
+                        print("overscroll (html / body): \(value as? String ?? "?")")
+                        exit(0)
+                    }
                 }
             }
         }
