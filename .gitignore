@@ -46,3 +46,6 @@ next-env.d.ts
 .agents/
 .claude/
 skills-lock.json
+
+# the Mac app's build output
+/mac/build
