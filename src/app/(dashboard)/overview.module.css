@@ -50,6 +50,12 @@
   padding: var(--space-4) var(--space-5) var(--space-5);
   overflow: hidden;
 }
+/* Not very tall desktop windows: see the note at .stage in shell.module.css. */
+@media (min-width: 1024px) and (max-height: 1100px) {
+  .panel {
+    gap: var(--space-4);
+  }
+}
 
 .meta {
   font-size: 0.8125rem;

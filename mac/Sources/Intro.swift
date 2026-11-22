@@ -100,7 +100,6 @@ final class Intro: NSView {
     private let flyer = CALayer()
     private var observers: [Any] = []
     private var endObserver: NSObjectProtocol?
-    private var filmReady: NSKeyValueObservation?
 
     private var pictureOver = false
     private var flooded = false
@@ -115,8 +114,10 @@ final class Intro: NSView {
         self.transition = transition
         let stretch = UserDefaults.standard.double(forKey: "introSlow")
         slow = stretch > 0 ? stretch : 1
-        player = AVPlayer(url: file)
+        player = Self.warmed ?? AVPlayer(url: file)
+        Self.warmed = nil
         super.init(frame: .zero)
+        player.automaticallyWaitsToMinimizeStalling = false
         player.isMuted = !Self.soundOn || slow != 1
         player.volume = Self.loudness
         player.actionAtItemEnd = .pause
@@ -129,6 +130,9 @@ final class Intro: NSView {
         stage.backgroundColor = Self.night.cgColor
         video.player = player
         video.videoGravity = .resizeAspectFill
+        // Out of sight until it moves: a first frame that sits still for a moment, while the
+        // player gets going, reads as the app hanging. Until then the window is the film's own dark.
+        video.opacity = 0
         zLayer.isHidden = true
         flyer.isHidden = true
         flyer.contentsGravity = .resize
@@ -142,18 +146,9 @@ final class Intro: NSView {
             still.actionAtItemEnd = .pause
             wallPlayer = still
             wall.player = still
-            // Kept out of sight until the film itself is on screen: the still is ready a moment
+            // Out of sight until the film itself is moving (see `reveal`): the still is ready
             // sooner, and would otherwise flash its lit wall before the film's dark first frames.
-            wall.isHidden = true
-            filmReady = video.observe(\.isReadyForDisplay, options: [.initial, .new]) { [weak self] layer, _ in
-                guard layer.isReadyForDisplay else { return }
-                DispatchQueue.main.async {
-                    CATransaction.begin()
-                    CATransaction.setDisableActions(true)
-                    self?.wall.isHidden = false
-                    CATransaction.commit()
-                }
-            }
+            wall.opacity = 0
             stage.addSublayer(wall)
         }
         stage.addSublayer(video)
@@ -180,29 +175,134 @@ final class Intro: NSView {
 
     deinit {
         observers.forEach { player.removeTimeObserver($0) }
+        if let movement { player.removeTimeObserver(movement) }
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
     }
 
     /// Width over height of logo.png (the flat wordmark that flies to the top bar).
     private var logoShape: CGFloat = 5
 
+    /// The player for the launch, made at the very start of it (`warmUp`), so the film is loaded
+    /// by the time the window is up.
+    private static var warmed: AVPlayer?
+
+    /// Call first thing at launch: starts loading the film while the rest of the app is set up.
+    static func warmUp(file: URL?) {
+        guard warmed == nil, let file, FileManager.default.fileExists(atPath: file.path) else { return }
+        let player = AVPlayer(url: file)
+        player.automaticallyWaitsToMinimizeStalling = false
+        warmed = player
+    }
+
+    private var readiness: NSKeyValueObservation?
+
+    /// Starts the film on the Mac's own clock, at a moment a blink from now, once its first frames
+    /// are ready. Plain `play()` shows the first frame and then holds it for about a third of a
+    /// second, until the sound hardware has woken up: the picture waits for the sound. Started
+    /// this way the picture runs on time and the sound joins it, in step, as soon as it can.
+    private func start() {
+        guard let item = player.currentItem else {
+            player.play()
+            return revealWhenMoving()
+        }
+        readiness = item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
+            guard item.status != .unknown else { return }
+            DispatchQueue.main.async {
+                guard let self, self.readiness != nil else { return }
+                self.readiness = nil
+                guard item.status == .readyToPlay else {
+                    self.player.play()
+                    return self.revealWhenMoving()
+                }
+                self.trace("film loaded")
+                self.player.preroll(atRate: 1) { [weak self] _ in
+                    DispatchQueue.main.async {
+                        guard let self, !self.gone else { return }
+                        let soon = CMTimeAdd(CMClockGetTime(CMClockGetHostTimeClock()), CMTime(value: 30, timescale: 1000))
+                        self.player.setRate(1, time: self.startAt, atHostTime: soon)
+                        self.trace("film started")
+                        self.revealWhenMoving()
+                    }
+                }
+            }
+        }
+    }
+
+    /// Where the film starts (the beginning, or `introFrom` in a test).
+    private var startAt = CMTime.zero
+    private var movement: Any?
+
+    /// Shows the film (and the still wall under it) at the first sign that it is running.
+    private func revealWhenMoving() {
+        guard movement == nil else { return }
+        let step = CMTime(value: 1, timescale: 60)
+        movement = player.addPeriodicTimeObserver(forInterval: step, queue: .main) { [weak self] time in
+            guard let self, time.seconds > self.startAt.seconds + 0.02 else { return }
+            self.reveal()
+        }
+        // A film that never reports movement still has to show.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.reveal() }
+    }
+
+    private func reveal() {
+        guard video.opacity == 0 else { return }
+        if let movement { player.removeTimeObserver(movement) }
+        movement = nil
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        video.opacity = 1
+        wall.opacity = 1
+        CATransaction.commit()
+        trace("film shown")
+    }
+
     func play() {
         // Test aid: `defaults write nl.flitzweb.studio.mac introFrom 2.3` starts the film there.
         let from = UserDefaults.standard.double(forKey: "introFrom")
         if from > 0 {
-            player.seek(to: CMTime(seconds: from, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
+            startAt = CMTime(seconds: from, preferredTimescale: 600)
+            player.seek(to: startAt, toleranceBefore: .zero, toleranceAfter: .zero)
         }
-        player.play()
+        start()
         trace("play (\(transition.rawValue))")
+        measureStart()
         // A page that never loads must not keep the opening up for ever.
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.pictureLength + Self.patience) { [weak self] in
             self?.pageReady = true
         }
     }
 
+    /// Test aid (`defaults write nl.flitzweb.studio.mac introTrace -bool true`): notes how the film
+    /// gets going in its first second and a half, to find a frozen start: when the player says it
+    /// is playing, where the film is every 50 ms, and any time the main thread was held up.
+    private var startProbes: [Any] = []
+    private func measureStart() {
+        guard UserDefaults.standard.bool(forKey: "introTrace") else { return }
+        startProbes.append(player.observe(\.timeControlStatus, options: [.initial, .new]) { [weak self] player, _ in
+            let reason = player.reasonForWaitingToPlay?.rawValue ?? "-"
+            DispatchQueue.main.async { self?.trace("status \(player.timeControlStatus.rawValue) waiting: \(reason)") }
+        })
+        startProbes.append(video.observe(\.isReadyForDisplay, options: [.initial, .new]) { [weak self] layer, _ in
+            let ready = layer.isReadyForDisplay
+            DispatchQueue.main.async { self?.trace("film on screen: \(ready)") }
+        })
+        var last = CACurrentMediaTime()
+        var ticks = 0
+        let timer = Timer(timeInterval: 0.05, repeats: true) { [weak self] timer in
+            let now = CACurrentMediaTime()
+            let gap = now - last
+            last = now
+            ticks += 1
+            self?.trace(String(format: "tick gap %.0f ms%@ window visible: %@", gap * 1000, gap > 0.09 ? "  <-- main thread held up" : "",
+                               self?.window?.isVisible == true ? "yes" : "no"))
+            if ticks > 36 || self == nil { timer.invalidate() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
     /// Test aid: with `introSlow` set, each stage is noted in /tmp/studio-intro-trace.log.
     private func trace(_ what: String) {
-        guard slow != 1 else { return }
+        guard slow != 1 || UserDefaults.standard.bool(forKey: "introTrace") else { return }
         let line = String(format: "%.3f  %@  slow=%.1f film=%.2f bounds=%@\n", CACurrentMediaTime(), what, slow,
                           player.currentTime().seconds, NSStringFromRect(bounds))
         let file = URL(fileURLWithPath: "/tmp/studio-intro-trace.log")

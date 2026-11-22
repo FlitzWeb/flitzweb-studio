@@ -13,6 +13,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     ]
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // First of all: the opening film starts loading while the window and the page are set up.
+        if !CommandLine.arguments.contains("--no-intro"), !CommandLine.arguments.contains("--snapshot") {
+            Intro.warmUp(file: Bundle.main.url(forResource: "intro", withExtension: "mp4"))
+        }
         buildMenus()
         studio = StudioWindow()
         // `--open /leads` starts on that page of the Studio instead of the overview.
@@ -213,10 +217,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                     print("page: \(self.studio.webView.url?.absoluteString ?? "-")")
                     print("title: \(self.studio.window.title)")
                     print("saved: \(file.path)")
-                    let probe = "getComputedStyle(document.documentElement).overscrollBehaviorY + ' / ' + getComputedStyle(document.body).overscrollBehaviorY"
+                    let probe = "getComputedStyle(document.documentElement).overscrollBehaviorY + ' / ' + getComputedStyle(document.body).overscrollBehaviorY + '  window ' + innerWidth + 'x' + innerHeight + '  page height ' + document.documentElement.scrollHeight"
                     self.studio.webView.evaluateJavaScript(probe) { value, _ in
                         print("overscroll (html / body): \(value as? String ?? "?")")
-                        exit(0)
+                        // `--probe <file.js>`: also runs that script in the page and prints what it returns.
+                        guard let flag = arguments.firstIndex(of: "--probe"), flag + 1 < arguments.count,
+                              let script = try? String(contentsOfFile: arguments[flag + 1], encoding: .utf8)
+                        else { exit(0) }
+                        self.studio.webView.evaluateJavaScript(script) { value, error in
+                            print("probe: \(value.map { "\($0)" } ?? "failed: \(error?.localizedDescription ?? "nothing returned")")")
+                            exit(0)
+                        }
                     }
                 }
             }

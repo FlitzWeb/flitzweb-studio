@@ -203,6 +203,12 @@ code {
   gap: var(--space-4);
   margin-bottom: var(--space-6);
 }
+/* Not very tall desktop windows: see the note at .stage in (dashboard)/shell.module.css. */
+@media (min-width: 1024px) and (max-height: 1100px) {
+  .page-head {
+    margin-bottom: var(--space-5);
+  }
+}
 .page-title {
   margin: 0;
   font-size: clamp(1.75rem, 2.6vw, 2.5rem);

@@ -386,6 +386,19 @@
     padding-left: clamp(60px, 4.8vw, 76px);
   }
 }
+/* A desktop window that is not very tall (a laptop screen, the Mac app maximised): less air
+   above and below the stage, so the overview fits without scrolling. With the matching rules
+   for .page-head (globals.css) and .panel (overview.module.css) this saves about 80px. */
+@media (min-width: 1024px) and (max-height: 1100px) {
+  .stageWrap {
+    margin-top: 10px;
+    padding-bottom: var(--space-4);
+  }
+  .stage {
+    padding-top: 24px;
+    padding-bottom: var(--space-6);
+  }
+}
 
 /* ---------- Dock ---------- */
 

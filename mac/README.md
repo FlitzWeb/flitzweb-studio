@@ -118,6 +118,15 @@ defaults write nl.flitzweb.studio.mac introFrom -float 2.35
 
 `defaults delete nl.flitzweb.studio.mac introSlow` (and the same for `introFrom`) goes back.
 
+`defaults write nl.flitzweb.studio.mac introTrace -bool true` writes how the film gets going to
+the same log at normal speed: when it is loaded, started and shown, where it is every 50 ms, and
+when the main thread was held up. The film is started on the Mac's clock and only shown once it
+moves; with a plain `play()` its first frame sat still for about 0.3 s, until the sound hardware
+was awake.
+
+`--probe <file.js>` with `--snapshot` runs that script in the loaded page and prints what it
+returns (used to measure the page's height at a window size).
+
 `defaults write nl.flitzweb.studio.mac badgeTest -int 2` pretends two sites are offline (reload the
 page with ⌘R to see the badge); delete the key to go back.
 
