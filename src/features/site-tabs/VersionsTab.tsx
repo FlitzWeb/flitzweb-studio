@@ -4,10 +4,10 @@ import { Suspense } from "react";
 import { CopyButton } from "@/components/CopyButton";
 import { PanelSkeleton } from "@/components/Skeleton";
 import { messageLink } from "@/features/clients/messageLink";
-import { ApproveConcept, MarkSent, MoveToConcept, PublishConcept, SendConcept } from "@/features/versions/ConceptButtons";
+import { ApproveConcept, MarkSent, MatchLive, MoveToConcept, PublishConcept, PullLive, SendConcept } from "@/features/versions/ConceptButtons";
 import styles from "@/features/versions/versions.module.css";
 import { displayHost, formatDate, formatRelative } from "@/lib/format";
-import { compareBranches, hasGithubToken, listBranches, type Comparison } from "@/lib/github";
+import { compareBranches, conceptState, hasGithubToken, listBranches, type ConceptState } from "@/lib/github";
 import type { SiteWithClient } from "@/lib/sites";
 import type { TabProps } from "./registry";
 import tabStyles from "./tabs.module.css";
@@ -44,7 +44,7 @@ export async function VersionsTab({ site }: TabProps) {
 
   // GitHub takes a moment (a second or more with several branches), so the two previews show
   // at once and what depends on GitHub streams in behind them.
-  const diff = site.repo ? compareBranches(site.repo, "main", site.conceptBranch) : Promise.resolve(null);
+  const diff = site.repo ? conceptState(site.repo, "main", site.conceptBranch) : Promise.resolve(null);
 
   return (
     <div className={tabStyles.stack}>
@@ -92,30 +92,45 @@ export async function VersionsTab({ site }: TabProps) {
   );
 }
 
-type DiffPromise = Promise<Comparison | null>;
+type DiffPromise = Promise<ConceptState | null>;
 
 /** How many changes a client would count (merge commits are left out of the list), or null without GitHub. */
-function changeCount(diff: Comparison | null) {
-  return diff?.ok ? (diff.ahead > 0 ? Math.max(diff.commits.length, 1) : 0) : null;
+function changeCount(diff: ConceptState | null) {
+  return diff?.ok ? (diff.notLive.length > 0 ? Math.max(diff.conceptCommits.length, 1) : 0) : null;
 }
-const hasChanges = (site: SiteWithClient, diff: Comparison | null) => {
+const hasChanges = (site: SiteWithClient, diff: ConceptState | null) => {
   const ahead = changeCount(diff);
   return ahead == null ? Boolean(site.conceptUrl) : ahead > 0;
 };
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 async function ConceptBadge({ site, diff: diffPromise }: { site: SiteWithClient; diff: DiffPromise }) {
   const diff = await diffPromise;
   const ahead = changeCount(diff);
-  const status = !hasChanges(site, diff)
-    ? { text: "Geen wijzigingen", tone: "plain" }
-    : site.conceptApprovedAt
-      ? { text: `Akkoord op ${formatDate(site.conceptApprovedAt)}`, tone: "ok" }
-      : site.conceptSentAt
-        ? { text: `Wacht op akkoord · verstuurd ${formatRelative(site.conceptSentAt)}`, tone: "warn" }
-        : { text: ahead ? `${ahead} ${ahead === 1 ? "wijziging" : "wijzigingen"} nog niet live` : "Nog niet verstuurd", tone: undefined };
+  const behind = diff?.ok && diff.missing.length > 0;
+  const status = diff?.ok && diff.equal
+    ? { text: "Gelijk aan live", tone: "ok" }
+    : !hasChanges(site, diff)
+      ? behind
+        ? null
+        : { text: "Geen wijzigingen", tone: "plain" }
+      : site.conceptApprovedAt
+        ? { text: `Akkoord op ${formatDate(site.conceptApprovedAt)}`, tone: "ok" }
+        : site.conceptSentAt
+          ? { text: `Wacht op akkoord · verstuurd ${formatRelative(site.conceptSentAt)}`, tone: "warn" }
+          : { text: ahead ? `${plural(ahead, "wijziging", "wijzigingen")} nog niet live` : "Nog niet verstuurd", tone: undefined };
   return (
-    <span className="badge" data-tone={status.tone}>
-      {status.text}
+    <span className={styles.badges}>
+      {status && (
+        <span className="badge" data-tone={status.tone}>
+          {status.text}
+        </span>
+      )}
+      {behind && (
+        <span className="badge" data-tone="warn">
+          Loopt achter op live
+        </span>
+      )}
     </span>
   );
 }
@@ -138,27 +153,31 @@ async function Changes({ site, diff: diffPromise }: { site: SiteWithClient; diff
         <p className={styles.note} data-tone="warn">
           {reasons[diff.reason](site.conceptBranch)}
         </p>
-      ) : diff?.ok && diff.ahead === 0 ? (
-        <p className={styles.note}>Het concept is gelijk aan de live site. Push nieuwe wijzigingen naar “{site.conceptBranch}” en ze verschijnen hier.</p>
+      ) : diff?.ok && diff.equal ? (
+        <p className={styles.note}>
+          Het concept is precies gelijk aan de live site. Push nieuwe wijzigingen naar “{site.conceptBranch}” en ze verschijnen hier.
+        </p>
       ) : diff?.ok ? (
         <>
-          <ul className={styles.changes}>
-            {diff.commits.slice(0, 12).map((c) => (
-              <li key={c.sha}>
-                <span>{c.message}</span>
-                {c.date && <time dateTime={c.date}>{formatDate(c.date)}</time>}
-              </li>
-            ))}
-          </ul>
-          <p className={styles.note}>
-            {diff.files.length} {diff.files.length === 1 ? "bestand" : "bestanden"} aangepast
-            {diff.commits.length > 12 && ` · en nog ${diff.commits.length - 12} eerdere wijzigingen`}
-          </p>
-          {site.repo && diff.behind > 0 && (
-            <Suspense fallback={null}>
-              <LiveOnlyNote repo={site.repo} conceptBranch={site.conceptBranch} />
-            </Suspense>
+          {diff.notLive.length > 0 ? (
+            <>
+              <ul className={styles.changes}>
+                {diff.conceptCommits.slice(0, 12).map((c) => (
+                  <li key={c.sha}>
+                    <span>{c.message}</span>
+                    {c.date && <time dateTime={c.date}>{formatDate(c.date)}</time>}
+                  </li>
+                ))}
+              </ul>
+              <p className={styles.note}>
+                {plural(diff.notLive.length, "bestand", "bestanden")} anders dan live
+                {diff.conceptCommits.length > 12 && ` · en nog ${diff.conceptCommits.length - 12} eerdere wijzigingen`}
+              </p>
+            </>
+          ) : (
+            <p className={styles.note}>Op het concept staat niets nieuws: alles wat erop staat, staat al live.</p>
           )}
+          {diff.missing.length > 0 && <Behind site={site} diff={diff} />}
         </>
       ) : null}
 
@@ -168,12 +187,13 @@ async function Changes({ site, diff: diffPromise }: { site: SiteWithClient; diff
           {send && <SendConcept siteId={site.id} href={send.href} channel={send.channel} />}
           {site.conceptUrl && !site.conceptSentAt && <MarkSent siteId={site.id} />}
           {(site.conceptSentAt || site.conceptApprovedAt) && <ApproveConcept siteId={site.id} approved={Boolean(site.conceptApprovedAt)} />}
-          {site.repo && diff?.ok && diff.ahead > 0 && hasGithubToken() && (
-            <PublishConcept siteId={site.id} siteName={site.name} count={ahead ?? diff.ahead} />
+          {site.repo && diff?.ok && hasGithubToken() && (
+            <PublishConcept siteId={site.id} siteName={site.name} count={ahead ?? 1} />
           )}
+          {site.repo && diff?.ok && hasGithubToken() && <MatchLive siteId={site.id} discards={ahead ?? 1} />}
         </div>
       )}
-      {site.repo && diff?.ok && diff.ahead > 0 && !hasGithubToken() && (
+      {site.repo && diff?.ok && diff.notLive.length > 0 && !hasGithubToken() && (
         <p className={styles.note}>“Zet live” verschijnt hier zodra de Studio een GitHub-sleutel heeft (GITHUB_TOKEN). Tot die tijd merge je zelf naar main.</p>
       )}
     </>
@@ -181,21 +201,38 @@ async function Changes({ site, diff: diffPromise }: { site: SiteWithClient; diff
 }
 
 /**
- * Changes that went live without passing through the concept (a quick fix pushed straight to main).
- * Every "Zet live" leaves a merge commit on main that the concept never gets, so counting the commits
- * main is ahead by would warn after each publish. Only files that changed on main since the two
- * branches split mean something is really missing from the concept.
+ * Live has changes the concept lacks (a fix pushed straight to main, or a "Zet live" of other work).
+ * The client's preview then shows an older site than the real one, so this offers to catch up:
+ * with no concept work of its own the concept simply becomes live again, otherwise live is merged in.
  */
-async function LiveOnlyNote({ repo, conceptBranch }: { repo: string; conceptBranch: string }) {
-  const live = await compareBranches(repo, conceptBranch, "main");
-  if (!live.ok || live.files.length === 0) return null;
-  // `commits` leaves out merge commits, so this counts the fixes themselves.
-  const count = Math.max(live.commits.length, 1);
+function Behind({ site, diff }: { site: SiteWithClient; diff: Extract<ConceptState, { ok: true }> }) {
+  const count = Math.max(diff.liveCommits.length, 1);
+  const ownWork = diff.notLive.length > 0;
   return (
-    <p className={styles.note} data-tone="warn">
-      De live site heeft {count} {count === 1 ? "wijziging" : "wijzigingen"} die nog niet in het concept {count === 1 ? "zit" : "zitten"}.
-      Bij live zetten worden ze samengevoegd.
-    </p>
+    <div className={styles.behind}>
+      <p className={styles.note} data-tone="warn">
+        Het concept loopt achter: live heeft {plural(count, "wijziging", "wijzigingen")} die nog niet in het concept{" "}
+        {count === 1 ? "zit" : "zitten"}.{" "}
+        {ownWork ? "Haal ze binnen, dan ziet de klant ze ook in het voorbeeld." : "Zet het concept gelijk aan live om weer bij te zijn."}
+      </p>
+      {diff.liveCommits.length > 0 && (
+        <ul className={styles.changes}>
+          {diff.liveCommits.slice(0, 5).map((c) => (
+            <li key={c.sha}>
+              <span>{c.message}</span>
+              {c.date && <time dateTime={c.date}>{formatDate(c.date)}</time>}
+            </li>
+          ))}
+        </ul>
+      )}
+      {hasGithubToken() ? (
+        <div className={styles.tools}>
+          {ownWork ? <PullLive siteId={site.id} /> : <MatchLive siteId={site.id} discards={0} primary />}
+        </div>
+      ) : (
+        <p className={styles.note}>Met een GitHub-sleutel (GITHUB_TOKEN) verschijnt hier een knop die dat voor je doet.</p>
+      )}
+    </div>
   );
 }
 

@@ -63,6 +63,20 @@
   text-align: center;
 }
 
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* "Live has changes the concept lacks": set apart from the concept's own list above it. */
+.behind {
+  margin-top: var(--space-4);
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--line);
+}
+
 .tools {
   display: flex;
   flex-wrap: wrap;

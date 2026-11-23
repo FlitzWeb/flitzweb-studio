@@ -18,6 +18,8 @@ const headers = () => ({
 
 const VALID_REPO = /^[\w.-]+\/[\w.-]+$/;
 
+type FileChange = { filename: string; status: string; sha: string | null };
+
 export type Comparison =
   | {
       ok: true;
@@ -30,6 +32,8 @@ export type Comparison =
       behind: number;
       commits: { sha: string; message: string; date: string | null }[];
       files: string[];
+      /** The same files with what they became on `head`, to tell identical changes on both sides apart. */
+      changes: FileChange[];
     }
   | { ok: false; reason: "no-branch" | "no-access" | "error" };
 
@@ -49,7 +53,7 @@ export async function compareBranches(repo: string, base: string, head: string):
       ahead_by: number;
       behind_by: number;
       commits: { sha: string; parents?: unknown[]; commit: { message: string; author: { date?: string } | null } }[];
-      files?: { filename: string }[];
+      files?: { filename: string; status: string; sha?: string | null }[];
     };
     return {
       ok: true,
@@ -61,7 +65,99 @@ export async function compareBranches(repo: string, base: string, head: string):
         .map((c) => ({ sha: c.sha, message: c.commit.message.split("\n")[0], date: c.commit.author?.date ?? null }))
         .reverse(),
       files: (data.files ?? []).map((f) => f.filename),
+      changes: (data.files ?? []).map((f) => ({ filename: f.filename, status: f.status, sha: f.sha ?? null })),
     };
+  } catch {
+    return { ok: false, reason: "error" };
+  }
+}
+
+export type ConceptState =
+  | {
+      ok: true;
+      /** Live and concept hold exactly the same files. */
+      equal: boolean;
+      /** Files whose concept version is not live yet. */
+      notLive: string[];
+      /** Commits behind `notLive`, newest first (merge commits and ones already live under the same message left out). */
+      conceptCommits: { sha: string; message: string; date: string | null }[];
+      /** Files changed on live that the concept doesn't have: the concept is behind. */
+      missing: string[];
+      /** Commits behind `missing` (same filtering). */
+      liveCommits: { sha: string; message: string; date: string | null }[];
+    }
+  | { ok: false; reason: "no-branch" | "no-access" | "error" };
+
+/**
+ * Where the concept stands against live, judged by content. Commit counts lie here: every "Zet live"
+ * leaves a merge commit on live, and a fix copied to both branches shows up as a commit on each side.
+ * So both sides' changes since the branches split are compared file by file, and a file changed the
+ * same way on both sides counts as neither new nor missing.
+ */
+export async function conceptState(repo: string, live: string, concept: string): Promise<ConceptState> {
+  const [toConcept, toLive] = await Promise.all([compareBranches(repo, live, concept), compareBranches(repo, concept, live)]);
+  if (!toConcept.ok) return toConcept;
+  if (!toLive.ok) return toLive;
+
+  const outcome = (c: FileChange) => (c.status === "removed" ? "removed" : c.sha);
+  const onLive = new Map(toLive.changes.map((c) => [c.filename, outcome(c)]));
+  const onConcept = new Map(toConcept.changes.map((c) => [c.filename, outcome(c)]));
+  const notLive = toConcept.changes.filter((c) => onLive.get(c.filename) !== outcome(c)).map((c) => c.filename);
+  const missing = toLive.changes.filter((c) => onConcept.get(c.filename) !== outcome(c)).map((c) => c.filename);
+
+  // A commit copied to the other branch keeps its message, so those are left out of both lists.
+  const liveMessages = new Set(toLive.commits.map((c) => c.message));
+  const conceptMessages = new Set(toConcept.commits.map((c) => c.message));
+  return {
+    ok: true,
+    equal: notLive.length === 0 && missing.length === 0,
+    notLive,
+    conceptCommits: notLive.length ? toConcept.commits.filter((c) => !liveMessages.has(c.message)) : [],
+    missing,
+    liveCommits: missing.length ? toLive.commits.filter((c) => !conceptMessages.has(c.message)) : [],
+  };
+}
+
+const refPath = (branch: string) => `heads/${branch.split("/").map(encodeURIComponent).join("/")}`;
+
+/**
+ * Makes `branch` hold exactly what `target` holds, as one new commit on top of `branch` whose parents
+ * are both branches. Nothing is force-pushed: the old work stays in the history, and because `target`
+ * becomes part of `branch`'s history, the two count as level afterwards.
+ */
+export async function matchBranch(repo: string, branch: string, target: string, message: string): Promise<MergeResult> {
+  if (!hasGithubToken()) return { ok: false, reason: "no-token" };
+  if (!VALID_REPO.test(repo)) return { ok: false, reason: "error" };
+  const call = async (path: string, init?: { method: string; body: unknown }) => {
+    const res = await fetch(`${API}/repos/${repo}/${path}`, {
+      method: init?.method ?? "GET",
+      headers: { ...headers(), ...(init ? { "Content-Type": "application/json" } : {}) },
+      body: init ? JSON.stringify(init.body) : undefined,
+      cache: "no-store",
+      signal: AbortSignal.timeout(10000),
+    });
+    return { status: res.status, data: res.ok ? ((await res.json()) as Record<string, unknown>) : null };
+  };
+  const denied = (status: number) => status === 401 || status === 403 || status === 404;
+  try {
+    const [from, to] = await Promise.all([call(`git/ref/${refPath(branch)}`), call(`git/ref/${refPath(target)}`)]);
+    if (!from.data || !to.data) return { ok: false, reason: denied(from.status) || denied(to.status) ? "no-access" : "error" };
+    const fromSha = (from.data.object as { sha: string }).sha;
+    const toSha = (to.data.object as { sha: string }).sha;
+
+    const [fromCommit, toCommit] = await Promise.all([call(`git/commits/${fromSha}`), call(`git/commits/${toSha}`)]);
+    if (!fromCommit.data || !toCommit.data) return { ok: false, reason: "error" };
+    const tree = (toCommit.data.tree as { sha: string }).sha;
+    // Same files already: nothing to change.
+    if ((fromCommit.data.tree as { sha: string }).sha === tree) return { ok: true, merged: false };
+
+    const created = await call("git/commits", { method: "POST", body: { message, tree, parents: [fromSha, toSha] } });
+    if (!created.data) return { ok: false, reason: denied(created.status) ? "no-access" : "error" };
+    // No force: if someone pushed to the branch in the meantime this fails instead of dropping their work.
+    const moved = await call(`git/refs/${refPath(branch)}`, { method: "PATCH", body: { sha: created.data.sha, force: false } });
+    if (moved.status === 422) return { ok: false, reason: "conflict" };
+    if (!moved.data) return { ok: false, reason: denied(moved.status) ? "no-access" : "error" };
+    return { ok: true, merged: true };
   } catch {
     return { ok: false, reason: "error" };
   }

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { contactLog, db, sites } from "@/db";
 import { requireSession } from "@/lib/auth";
 import { todayISO } from "@/lib/dates";
-import { compareBranches, mergeBranch } from "@/lib/github";
+import { conceptState, matchBranch, mergeBranch } from "@/lib/github";
 
 const LIVE_BRANCH = "main";
 
@@ -39,14 +39,14 @@ export async function publishConcept(siteId: number): Promise<{ error?: string; 
   const site = await db.query.sites.findFirst({ where: eq(sites.id, siteId) });
   if (!site?.repo) return { error: "Vul eerst de GitHub-repo in bij Bewerken." };
 
-  const diff = await compareBranches(site.repo, LIVE_BRANCH, site.conceptBranch);
-  if (diff.ok && diff.ahead === 0) return { error: "Er is niets nieuws om live te zetten." };
+  const state = await conceptState(site.repo, LIVE_BRANCH, site.conceptBranch);
+  if (state.ok && state.notLive.length === 0) return { error: "Er is niets nieuws om live te zetten." };
 
   const result = await mergeBranch(site.repo, LIVE_BRANCH, site.conceptBranch, `Zet concept live (${site.name})`);
   if (!result.ok) return { error: publishErrors[result.reason] };
 
   await db.update(sites).set({ conceptSentAt: null, conceptApprovedAt: null }).where(eq(sites.id, siteId));
-  const changes = diff.ok && diff.commits.length ? `: ${diff.commits.slice(0, 5).map((c) => c.message).join("; ")}` : "";
+  const changes = state.ok && state.conceptCommits.length ? `: ${state.conceptCommits.slice(0, 5).map((c) => c.message).join("; ")}` : "";
   await db.insert(contactLog).values({
     clientId: site.clientId,
     kind: "note",
@@ -78,6 +78,51 @@ export async function moveToConcept(siteId: number, branch: string): Promise<{ e
     };
   }
   // The concept changed, so an earlier "sent" or "approved" no longer covers it.
+  await db.update(sites).set({ conceptSentAt: null, conceptApprovedAt: null }).where(eq(sites.id, siteId));
+  revalidatePath("/", "layout");
+  return { done: true };
+}
+
+/**
+ * The concept is behind: brings what changed on live into it (a merge on GitHub). The concept's own
+ * work stays, so an earlier "sent" or "approved" still holds.
+ */
+export async function pullLiveIntoConcept(siteId: number): Promise<{ error?: string; done?: boolean }> {
+  await requireSession();
+  const site = await db.query.sites.findFirst({ where: eq(sites.id, siteId) });
+  if (!site?.repo) return { error: "Vul eerst de GitHub-repo in bij Bewerken." };
+
+  const result = await mergeBranch(site.repo, site.conceptBranch, LIVE_BRANCH, `Haal live binnen in ${site.conceptBranch}`);
+  if (!result.ok) {
+    return {
+      error:
+        result.reason === "conflict"
+          ? "Live en concept hebben hetzelfde stuk anders aangepast. Los dat op in de code, of zet het concept gelijk aan live."
+          : publishErrors[result.reason],
+    };
+  }
+  revalidatePath("/", "layout");
+  return { done: true };
+}
+
+/**
+ * Makes the concept exactly the live site again. Its own changes leave the concept (GitHub keeps them
+ * in the history), so there is nothing left to send or approve.
+ */
+export async function resetConceptToLive(siteId: number): Promise<{ error?: string; done?: boolean }> {
+  await requireSession();
+  const site = await db.query.sites.findFirst({ where: eq(sites.id, siteId) });
+  if (!site?.repo) return { error: "Vul eerst de GitHub-repo in bij Bewerken." };
+
+  const result = await matchBranch(site.repo, site.conceptBranch, LIVE_BRANCH, `Zet ${site.conceptBranch} gelijk aan live`);
+  if (!result.ok) {
+    return {
+      error:
+        result.reason === "conflict"
+          ? "Het concept veranderde net op GitHub. Ververs de pagina en probeer het opnieuw."
+          : publishErrors[result.reason],
+    };
+  }
   await db.update(sites).set({ conceptSentAt: null, conceptApprovedAt: null }).where(eq(sites.id, siteId));
   revalidatePath("/", "layout");
   return { done: true };
