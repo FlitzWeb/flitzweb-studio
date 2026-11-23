@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, sql } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { clients, contactLog, db } from "@/db";
@@ -129,6 +129,32 @@ export async function logVisit(clientId: number) {
   if (!client) return;
   await db.insert(contactLog).values({ clientId, kind: "visit", body: defaultBody.visit, occurredOn: todayISO() });
   if (client.stage === "lead") await db.update(clients).set({ stage: "contacted" }).where(eq(clients.id, clientId));
+  revalidatePath("/", "layout");
+}
+
+/**
+ * Takes back today's door visit (a mistap on the Looproute). Removes the visit
+ * from the log and, when that visit was the only contact that made the lead
+ * "Benaderd", puts it back on "Lead".
+ */
+export async function undoVisit(clientId: number) {
+  await requireSession();
+  const visit = await db.query.contactLog.findFirst({
+    where: and(eq(contactLog.clientId, clientId), eq(contactLog.kind, "visit"), eq(contactLog.occurredOn, todayISO())),
+    orderBy: desc(contactLog.id),
+    columns: { id: true },
+  });
+  if (!visit) return;
+  await db.delete(contactLog).where(eq(contactLog.id, visit.id));
+
+  const client = await db.query.clients.findFirst({ where: eq(clients.id, clientId), columns: { stage: true } });
+  const otherContact = await db.query.contactLog.findFirst({
+    where: and(eq(contactLog.clientId, clientId), ne(contactLog.kind, "note")),
+    columns: { id: true },
+  });
+  if (client?.stage === "contacted" && !otherContact) {
+    await db.update(clients).set({ stage: "lead" }).where(eq(clients.id, clientId));
+  }
   revalidatePath("/", "layout");
 }
 

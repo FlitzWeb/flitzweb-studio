@@ -1,17 +1,30 @@
 "use client";
 
-import { Check, Footprints } from "lucide-react";
+import { Check, Footprints, Undo2 } from "lucide-react";
 import { useTransition } from "react";
-import { logVisit } from "./actions";
+import { logVisit, undoVisit } from "./actions";
+import styles from "./clients.module.css";
 
-/** One tap on the Looproute: "I was at this door". Logs the visit; nothing is sent. */
+/** One tap on the Looproute: "I was at this door". Logs the visit; nothing is sent. The ↶ takes it back. */
 export function VisitButton({ id, visitedToday }: { id: number; visitedToday: boolean }) {
   const [pending, startTransition] = useTransition();
   if (visitedToday) {
     return (
-      <span className="badge" data-tone="ok">
-        <Check aria-hidden="true" width={13} height={13} />
-        Vandaag geweest
+      <span className={styles.visitDone}>
+        <span className="badge" data-tone="ok">
+          <Check aria-hidden="true" width={13} height={13} />
+          Vandaag geweest
+        </span>
+        <button
+          type="button"
+          className={styles.visitUndo}
+          aria-label="Bezoek ongedaan maken"
+          title="Ongedaan maken"
+          disabled={pending}
+          onClick={() => startTransition(() => undoVisit(id))}
+        >
+          <Undo2 aria-hidden="true" />
+        </button>
       </span>
     );
   }
