@@ -154,11 +154,10 @@ async function Changes({ site, diff: diffPromise }: { site: SiteWithClient; diff
             {diff.files.length} {diff.files.length === 1 ? "bestand" : "bestanden"} aangepast
             {diff.commits.length > 12 && ` · en nog ${diff.commits.length - 12} eerdere wijzigingen`}
           </p>
-          {diff.behind > 0 && (
-            <p className={styles.note} data-tone="warn">
-              De live site heeft {diff.behind} {diff.behind === 1 ? "wijziging" : "wijzigingen"} die nog niet in het concept zit. Bij live
-              zetten worden ze samengevoegd.
-            </p>
+          {site.repo && diff.behind > 0 && (
+            <Suspense fallback={null}>
+              <LiveOnlyNote repo={site.repo} conceptBranch={site.conceptBranch} />
+            </Suspense>
           )}
         </>
       ) : null}
@@ -178,6 +177,25 @@ async function Changes({ site, diff: diffPromise }: { site: SiteWithClient; diff
         <p className={styles.note}>“Zet live” verschijnt hier zodra de Studio een GitHub-sleutel heeft (GITHUB_TOKEN). Tot die tijd merge je zelf naar main.</p>
       )}
     </>
+  );
+}
+
+/**
+ * Changes that went live without passing through the concept (a quick fix pushed straight to main).
+ * Every "Zet live" leaves a merge commit on main that the concept never gets, so counting the commits
+ * main is ahead by would warn after each publish. Only files that changed on main since the two
+ * branches split mean something is really missing from the concept.
+ */
+async function LiveOnlyNote({ repo, conceptBranch }: { repo: string; conceptBranch: string }) {
+  const live = await compareBranches(repo, conceptBranch, "main");
+  if (!live.ok || live.files.length === 0) return null;
+  // `commits` leaves out merge commits, so this counts the fixes themselves.
+  const count = Math.max(live.commits.length, 1);
+  return (
+    <p className={styles.note} data-tone="warn">
+      De live site heeft {count} {count === 1 ? "wijziging" : "wijzigingen"} die nog niet in het concept {count === 1 ? "zit" : "zitten"}.
+      Bij live zetten worden ze samengevoegd.
+    </p>
   );
 }
 

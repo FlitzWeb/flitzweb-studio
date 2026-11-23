@@ -23,7 +23,10 @@ export type Comparison =
       ok: true;
       /** Commits on the concept branch that are not live yet. */
       ahead: number;
-      /** Commits that went live without being on the concept branch. */
+      /**
+       * Commits on `base` that `head` lacks. On main this includes the merge commit every "Zet live"
+       * leaves behind, so it is not a count of real changes (compare the other way and look at `files`).
+       */
       behind: number;
       commits: { sha: string; message: string; date: string | null }[];
       files: string[];
