@@ -49,6 +49,7 @@ In Vercel → Settings → Environment Variables (Production):
 | `EMAIL_FROM` | `FlitzWeb Studio <studio@flitzweb.nl>` |
 | `CRON_SECRET` | `openssl rand -hex 24` |
 | `ALERT_EMAIL` | optional, if alerts should go somewhere else |
+| `GSC_SERVICE_ACCOUNT` | optional, the Google service account's JSON key for the Google tab (see [Google Search Console](#google-search-console)); mark it **Sensitive** |
 
 Redeploy after adding them. Optional: add the domain `studio.flitzweb.nl` under Settings → Domains.
 
@@ -184,6 +185,41 @@ Privacy and safety (AVG/GDPR):
 - Events older than 400 days are deleted by the cron job.
 - To not count your own visits: on the client site, run `localStorage.setItem("flitz-ignore", "1")` in the browser console.
 
+## Google Search Console
+
+The **Google** tab of a site shows what Google Search Console knows and the Stats tab can't: how often the site was
+shown in Google (impressions), how often it was clicked, the click rate and the average position, per day, per search
+term, page, country and device. Periods are 7 and 28 days, 3, 12 and 16 months, ending on the last day Google has data
+for (usually a day or two ago), compared with the period before. Two lists point at work worth doing:
+
+- **Bijna op pagina 1**: search terms where the site sits just below the top (average position 8 to 20) with enough
+  impressions to matter.
+- **Nieuw in deze periode**: search terms that had no impressions in the period before.
+
+Google leaves out search terms that very few people used, for privacy, so the search terms add up to fewer clicks than
+the total; the tab says how many. The **Maandrapport** gets a "In Google getoond" number (with the clicks under it) and a
+third list, "Gevonden in Google op" (the three terms the site was shown for most); both switch off with the "Google" part.
+
+How it works: a Google **service account** (a robot account with its own key) reads Search Console, read-only
+(`webmasters.readonly`). The cron copies the data into `search_stats` at most every 12 hours per site
+(`lib/searchConsole/sync.ts`, run with `after()` so it never delays the uptime check): 16 months the first time, after
+that the last 5 days again, because Google adjusts a day for about three days. Pages read only the database, never Google.
+"Nu ophalen" on the tab fetches straight away. When Google refuses, the reason is kept on the site and shown on the tab.
+
+Setting it up (once, for all sites):
+
+1. In [Google Cloud](https://console.cloud.google.com/), create a project (e.g. "flitzweb-studio") and enable the
+   **Google Search Console API** (APIs en services → Bibliotheek).
+2. IAM en beheer → **Serviceaccounts** → Serviceaccount maken. A name is enough; skip the roles and the user access.
+3. Open the account → **Sleutels** → Sleutel toevoegen → Nieuwe sleutel → JSON. A file downloads.
+4. Put its contents in Vercel as `GSC_SERVICE_ACCOUNT` (Production, **Sensitive**), e.g.
+   `vercel env add GSC_SERVICE_ACCOUNT production --sensitive < key.json`, then redeploy. Delete the downloaded file
+   afterwards. (Base64 of the file also works.)
+5. In [Search Console](https://search.google.com/search-console), for each property: Instellingen → Gebruikers en
+   rechten → Gebruiker toevoegen → the service account's address (`…@….iam.gserviceaccount.com`), permission **Beperkt**.
+   A domain property (`sc-domain:example.nl`, verified with a DNS record in Cloudflare) covers http/https and www.
+6. On each site's **Google** tab, pick the property (the matching one is preselected) and press **Koppelen**.
+
 ## Project layout
 
 ```
@@ -192,7 +228,7 @@ src/
     (dashboard)/        pages behind the login (layout = header + auth check)
       nav.ts            main menu: add a line here for a new section
       sites/[id]/[[...tab]]/  site detail page, renders the tab registry
-    api/cron/check/     uptime cron endpoint (also creates monthly charges, prunes old data)
+    api/cron/check/     uptime cron endpoint (also creates monthly charges, prunes old data, syncs Search Console)
     api/collect/        browser events from t.js
     api/ingest/         server-to-server events
     geld/               money pages
@@ -204,11 +240,13 @@ src/
     clients/, sites/    forms, contact buttons
     money/              invoices, subscriptions, charges, totals
     stats/              stats queries, metric cards, tracker editor, snippets
+    search/             Google tab: Search Console queries, chart, table, link/sync actions
   lib/
     auth.ts, session.ts magic link + signed session cookie
     uptime/             probe (HTTP + TLS), run (store + alert), queries
     events/             validate + store events, rate limiter, pruning
     analytics/          Umami-style sessions/visits, client detection, periods, queries
+    searchConsole/      Google service-account login, Search Console API, daily sync
   tracker/t.ts          source of the tracking script (built to public/t.js)
     format.ts           Dutch date/euro formatting, Europe/Amsterdam
     email.ts            Resend wrapper (prints to terminal without a key)

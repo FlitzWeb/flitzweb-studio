@@ -3,6 +3,7 @@ export const REPORT_PARTS = [
   { key: "goals", label: "Resultaten", hint: "Je trackers, zoals afspraken of WhatsApp-klikken" },
   { key: "visitors", label: "Bezoekers", hint: "Aantal bezoekers, met het verschil t.o.v. de maand ervoor" },
   { key: "views", label: "Pagina's bekeken", hint: "Totaal aantal bekeken pagina's" },
+  { key: "google", label: "Google", hint: "Hoe vaak de site in Google verscheen en op welke zoekwoorden (als Search Console gekoppeld is)" },
   { key: "uptime", label: "Bereikbaar", hint: "Hoeveel procent van de tijd de site online was" },
   { key: "chart", label: "Bezoekers per dag", hint: "Het staafdiagram" },
   { key: "pages", label: "Meest bekeken pagina's", hint: "Valt vanzelf weg als de site maar één pagina heeft" },

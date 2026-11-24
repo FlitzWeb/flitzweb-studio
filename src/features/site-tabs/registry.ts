@@ -6,6 +6,7 @@ import type { ComponentType } from "react";
 import type { SiteWithClient } from "@/lib/sites";
 import { ContactTab } from "./ContactTab";
 import { EventsTab } from "./EventsTab";
+import { GoogleTab } from "./GoogleTab";
 import { LiveTab } from "./LiveTab";
 import { OverviewTab } from "./OverviewTab";
 import { PaymentsTab } from "./PaymentsTab";
@@ -46,6 +47,7 @@ export const siteTabs: SiteTab[] = [
   },
   { slug: "versies", label: "Versies", component: VersionsTab },
   { slug: "stats", label: "Stats", component: StatsTab },
+  { slug: "google", label: "Google", component: GoogleTab },
   { slug: "maandrapport", label: "Maandrapport", component: SummaryTab },
   { slug: "events", label: "Events", component: EventsTab, hidden: true },
   { slug: "bezoekers", label: "Bezoekers", component: VisitorsTab, hidden: true },

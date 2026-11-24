@@ -5,6 +5,7 @@ import { addDays, addMonths, monthStart, todayISO } from "@/lib/dates";
 import { amsterdamMidnight, type Period } from "@/lib/analytics/periods";
 import { getBreakdowns, getPageviewSeries, getWebsiteStats } from "@/lib/analytics/queries";
 import { sinceFirstUp } from "@/lib/uptime/queries";
+import { monthSearch } from "@/features/search/queries";
 import { countedEvents } from "@/features/stats/source";
 import { goalKey } from "./message";
 import { friendlySources } from "./sources";
@@ -43,7 +44,7 @@ export async function getMonthSummary(siteId: number, trackers: Tracker[], month
   const counted = countedEvents(trackers);
   const day = sql<string>`to_char(${events.occurredAt} at time zone 'Europe/Amsterdam', 'YYYY-MM-DD')`;
 
-  const [stats, breakdowns, series, goals, prevGoals, perDay, uptime, [firstEvent]] = await Promise.all([
+  const [stats, breakdowns, series, goals, prevGoals, perDay, uptime, [firstEvent], search] = await Promise.all([
     getWebsiteStats(siteId, period),
     getBreakdowns(siteId, period),
     getPageviewSeries(siteId, period),
@@ -93,6 +94,8 @@ export async function getMonthSummary(siteId: number, trackers: Tracker[], month
       .from(checks)
       .where(and(eq(checks.siteId, siteId), gte(checks.checkedAt, from), lt(checks.checkedAt, end), sinceFirstUp)),
     db.select({ at: sql<string | null>`min(${events.occurredAt})` }).from(events).where(eq(events.siteId, siteId)),
+    // Google Search Console, when the site is linked (null otherwise).
+    monthSearch(siteId, month),
   ]);
 
   // "+228% t.o.v. de maand ervoor" is only true when both months were measured
@@ -131,6 +134,7 @@ export async function getMonthSummary(siteId: number, trackers: Tracker[], month
       previous: total(t, prevByKey.get(t.eventKey)),
     })),
     uptimePct: uptime[0]?.total ? (100 * uptime[0].up) / uptime[0].total : null,
+    search,
   };
 }
 export type MonthSummary = Awaited<ReturnType<typeof getMonthSummary>>;

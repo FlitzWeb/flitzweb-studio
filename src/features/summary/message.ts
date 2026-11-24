@@ -22,6 +22,7 @@ export type Highlight = { key: string; label: string; value: string; note?: stri
 export const FIXED_HIGHLIGHTS = [
   { key: "visitors", label: "Bezoekers" },
   { key: "views", label: "Pagina's bekeken" },
+  { key: "google", label: "In Google getoond" },
   { key: "uptime", label: "Bereikbaar" },
 ] as const;
 
@@ -54,6 +55,15 @@ export function highlights(s: MonthSummary, hidden: ReadonlySet<ReportPart> = ne
       label: "Bezoekers",
       value: nl(s.stats.current.visitors),
       note: change(s.stats.current.visitors, s.stats.previous.visitors),
+    });
+  }
+  if (!hidden.has("google") && s.search) {
+    const { clicks } = s.search.current;
+    list.push({
+      key: "google",
+      label: "In Google getoond",
+      value: nl(s.search.current.impressions),
+      note: clicks ? `${nl(clicks)} keer aangeklikt` : "keer in de zoekresultaten",
     });
   }
   if (!hidden.has("views")) {

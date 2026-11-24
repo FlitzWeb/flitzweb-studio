@@ -134,6 +134,13 @@
       "when": 1795359713421,
       "tag": "0018_lead_research",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1795461626282,
+      "tag": "0019_search_console",
+      "breakpoints": true
     }
   ]
 }

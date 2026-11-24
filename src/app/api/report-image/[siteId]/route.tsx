@@ -64,6 +64,17 @@ export async function GET(
   const hidden = hiddenParts(site.reportHidden);
   const showPages = !hidden.has("pages") && summary.pages.length > 1;
   const showSources = !hidden.has("sources");
+  // The search terms the site was shown for in Google (Search Console), most shown first.
+  const terms = hidden.has("google")
+    ? []
+    : (summary.search?.queries ?? []).map((q) => ({ label: q.value, count: q.impressions }));
+  const lists = [
+    showPages && { title: "Meest bekeken", rows: summary.pages },
+    showSources && { title: "Bezoekers kwamen via", rows: summary.referrers },
+    terms.length > 0 && { title: "Gevonden in Google op", rows: terms },
+  ].filter((l) => l !== false);
+  // Three lists side by side get a smaller font, so the picture never grows taller.
+  const compact = lists.length > 2;
   const tiles = highlights(summary, hidden, site.reportLead);
   const { chart } = summary;
   const maxDay = Math.max(...chart.days.map((d) => d.value), 1);
@@ -328,18 +339,19 @@ export async function GET(
             </div>
           )}
 
-          {/* Top pages and sources */}
-          {(showPages || showSources) && (
-            <div style={{ display: "flex", gap: 40, marginTop: 22 }}>
-              {showPages && (
-                <TopList title="Meest bekeken" rows={summary.pages} />
-              )}
-              {showSources && (
+          {/* Top pages, sources and Google search terms */}
+          {lists.length > 0 && (
+            <div
+              style={{ display: "flex", gap: compact ? 28 : 40, marginTop: 22 }}
+            >
+              {lists.map((l) => (
                 <TopList
-                  title="Bezoekers kwamen via"
-                  rows={summary.referrers}
+                  key={l.title}
+                  title={l.title}
+                  rows={l.rows}
+                  compact={compact}
                 />
-              )}
+              ))}
             </div>
           )}
 
@@ -398,13 +410,19 @@ export async function GET(
 function TopList({
   title,
   rows,
+  compact = false,
 }: {
   title: string;
   rows: { label: string; count: number }[];
+  compact?: boolean;
 }) {
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-      <div style={{ fontSize: 24, fontWeight: 600, color: INK_2 }}>{title}</div>
+    <div
+      style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}
+    >
+      <div style={{ fontSize: compact ? 22 : 24, fontWeight: 600, color: INK_2 }}>
+        {title}
+      </div>
       {rows.length === 0 ? (
         <div style={{ fontSize: 24, color: INK_3, marginTop: 10 }}>
           Nog niets gemeten
@@ -416,15 +434,15 @@ function TopList({
             style={{
               display: "flex",
               justifyContent: "space-between",
-              gap: 16,
-              fontSize: 25,
+              gap: compact ? 12 : 16,
+              fontSize: compact ? 23 : 25,
               marginTop: 10,
             }}
           >
             <div
               style={{
                 display: "flex",
-                maxWidth: 300,
+                maxWidth: compact ? 205 : 300,
                 overflow: "hidden",
                 whiteSpace: "nowrap",
                 textOverflow: "ellipsis",

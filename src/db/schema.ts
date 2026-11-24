@@ -157,6 +157,13 @@ export const sites = pgTable(
     conceptSentAt: timestamp("concept_sent_at", { withTimezone: true }),
     conceptApprovedAt: timestamp("concept_approved_at", { withTimezone: true }),
 
+    // Google Search Console: the property this site's search data comes from
+    // ("sc-domain:hakiki.nl" or "https://hakiki.nl/"), when the last sync ran and
+    // what went wrong with it (null = it worked). See lib/searchConsole.
+    gscProperty: text("gsc_property"),
+    gscSyncedAt: timestamp("gsc_synced_at", { withTimezone: true }),
+    gscError: text("gsc_error"),
+
     createdAt: createdAt(),
   },
   (t) => [index("sites_client_idx").on(t.clientId)],
@@ -297,6 +304,33 @@ export const events = pgTable(
     index("events_site_time_idx").on(t.siteId, t.occurredAt),
     index("events_session_idx").on(t.sessionId),
   ],
+);
+
+// ---------------------------------------------------------------------------
+// Google Search Console, copied once or twice a day (lib/searchConsole/sync.ts).
+// One row per day per value: "total" is the whole site (one row a day, value ""),
+// the others are one search term, page, country or device. Google drops rare
+// search terms for privacy, so the "query" rows add up to less than "total".
+// Kept here so the numbers outlive Google's 16 months and pages never wait on Google.
+// ---------------------------------------------------------------------------
+
+export const searchDimension = pgEnum("search_dimension", ["total", "query", "page", "country", "device"]);
+
+export const searchStats = pgTable(
+  "search_stats",
+  {
+    siteId: integer("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    date: date().notNull(), // Google's day (Pacific time)
+    dimension: searchDimension().notNull(),
+    value: text().notNull(), // "" for total; country is Google's 3-letter code ("nld")
+    clicks: integer().notNull(),
+    impressions: integer().notNull(),
+    // Google's average position for this row (1 = top). Averages over rows are weighted by impressions.
+    position: doublePrecision().notNull(),
+  },
+  (t) => [index("search_stats_site_dim_date_idx").on(t.siteId, t.dimension, t.date)],
 );
 
 /** Saved analytics reports (Umami's Reports): funnel, journey, retention, goal. */

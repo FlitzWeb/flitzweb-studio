@@ -1,8 +1,10 @@
 import { timingSafeEqual } from "node:crypto";
+import { after } from "next/server";
 import { ensureCharges } from "@/features/money/charges";
 import { sendOverdueAlerts } from "@/features/money/overdueAlerts";
 import { pruneLoginTokens } from "@/lib/auth";
 import { pruneEvents, sendSpikeAlerts } from "@/lib/events/prune";
+import { syncDueSearchConsole } from "@/lib/searchConsole/sync";
 import { runChecks } from "@/lib/uptime/run";
 
 // Checks every live site. Called by Vercel Cron (daily) and cron-job.org
@@ -41,6 +43,9 @@ async function handle(request: Request) {
     await pruneLoginTokens();
     return true;
   });
+  // Google Search Console, at most twice a day per site. After the response, so a
+  // slow first sync (16 months of data) never makes the cron call time out.
+  after(() => step("search console", syncDueSearchConsole));
   return Response.json({
     checked: Array.isArray(results) ? results.length : results,
     charges: charges && typeof charges === "object" && "failed" in charges ? charges : undefined,
