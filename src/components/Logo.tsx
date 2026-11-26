@@ -30,11 +30,17 @@ export function Logo({ className, studio }: { className?: string; studio?: boole
   );
 }
 
+/** The bolt of the app icon (brand kit), shared by `BoltMark` and `GlassIcon`. */
+export const BOLT_MARK = {
+  viewBox: "30 21 196 214",
+  d: "M46.66 42 L55.89 26 L220.89 26 L136.6 172 L209.34 214 L200.11 230 L35.11 230 L119.4 84 Z",
+} as const;
+
 /** The bolt on its own (app icon, small spaces). */
 export function BoltMark({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="30 21 196 214" aria-hidden="true">
-      <path fill="currentColor" d="M46.66 42 L55.89 26 L220.89 26 L136.6 172 L209.34 214 L200.11 230 L35.11 230 L119.4 84 Z" />
+    <svg className={className} viewBox={BOLT_MARK.viewBox} aria-hidden="true">
+      <path fill="currentColor" d={BOLT_MARK.d} />
     </svg>
   );
 }
