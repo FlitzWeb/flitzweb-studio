@@ -110,6 +110,16 @@ The schema is ready for it: `payments` and `subscription_charges` have `provider
 - The tab judges concept against live **by content**, not by commit counts (`conceptState`): both sides' changes since the branches split are compared file by file, so merge commits and a fix copied to both branches don't count as a difference. That gives the concept badge "Gelijk aan live" or "Loopt achter op live".
 - When the concept is behind, **Haal live binnen** merges `main` into the concept (its own work stays), and with nothing of its own on the concept the button is **Zet gelijk aan live**. That button is also offered (with a confirm) to throw the concept's changes away: it adds one commit with live's files on top of the concept, with both branches as parents (`matchBranch`). Nothing is force-pushed, so the old work stays in GitHub's history.
 
+## How Aanpassen works (editing a site's texts)
+
+- A site's **Aanpassen** tab shows one of its pages and lets you click any text and type. **Opslaan** writes the changes as one commit on the concept branch (or another work branch; never `main`), so they reach the live site the usual way: Versies → send the link → Zet live. Saving resets "verstuurd"/"akkoord", like any new work on the concept.
+- The page is read from GitHub at the branch's newest commit, not from the host's preview, so it is there the moment it is saved. A route (`app/edit-frame/[token]/[...path]`) serves the page and its files at that exact commit to a sandboxed frame. The frame sends no login cookie, so the URL carries a signed token (`features/editor/frameToken.ts`, a few hours, one repo at one commit); the proxy lets `/edit-frame/` and `/edit-frame.js` through.
+- `features/editor/html.ts` finds the editable texts with parse5's source positions: an element holding only text and formatting (`em`, `strong`, `a`, `br`, …) is one text; a row of links is a text per link; icons inside (`svg`, `img`) travel as `<fz-atom>` placeholders and come back from the source byte for byte. Saving replaces only the inside of the edited elements (and `data-en` for the English version); every other byte of the file stays as it was, and a save that would change the page's structure is refused.
+- `src/editor-frame/frame.ts` (built to `public/edit-frame.js` by `npm run build:frame`; do not edit that file) runs in the frame: it makes texts editable, keeps icons, pastes as plain text, blocks navigation, and reports every change with `postMessage`. A text the site's own scripts fill in or rebuild (the menu, a discount percentage, today's hours) differs from the file, so it is locked; `features/editor/sites.ts` can lock more with CSS selectors.
+- If the branch moved on while you were typing (Claude pushed), each text is found again in the newer page by its old content. Anything that can't be found for certain is reported and nothing is saved.
+- Per site, `features/editor/sites.ts` lists the pages (Rijschool Veilig: `v4/index.html`, never the generated `live-site/`), popups to hide and texts to lock. A site that isn't listed gets its `index.html`.
+- Saving needs `GITHUB_TOKEN`. Claude's browser pane refuses frames with an opaque origin; for testing there only, `EDITOR_FRAME_SAME_ORIGIN=1` (ignored in production) loosens the sandbox.
+
 ## Stats (Umami-style analytics)
 
 The **Stats** tab of a site works like [Umami](https://umami.is): visitors, visits, views, bounce rate and visit duration (with the change vs the previous period), a chart of views and visitors, and breakdowns by page (plus entry and exit pages), referrer, channel (search, social, email, paid ads, AI assistants, direct, …), UTM tag, browser, OS, device, screen, country, region, city and language. The **Live** tab shows the last 30 minutes (visitors, a per-minute chart and an activity feed) and refreshes every 5 seconds. The **Events** tab lists every custom event with its count, visitors and conversion, and each event's properties with their most common values. The **Bezoekers** tab lists recent (anonymous) visitors; click one for their timeline per visit.
@@ -241,6 +251,7 @@ src/
     money/              invoices, subscriptions, charges, totals
     stats/              stats queries, metric cards, tracker editor, snippets
     search/             Google tab: Search Console queries, chart, table, link/sync actions
+    editor/             Aanpassen tab: HTML mapping + splicing, frame token, per-site pages, save action
   lib/
     auth.ts, session.ts magic link + signed session cookie
     uptime/             probe (HTTP + TLS), run (store + alert), queries
@@ -248,6 +259,7 @@ src/
     analytics/          Umami-style sessions/visits, client detection, periods, queries
     searchConsole/      Google service-account login, Search Console API, daily sync
   tracker/t.ts          source of the tracking script (built to public/t.js)
+  editor-frame/frame.ts script inside the Aanpassen frame (built to public/edit-frame.js)
     format.ts           Dutch date/euro formatting, Europe/Amsterdam
     email.ts            Resend wrapper (prints to terminal without a key)
   db/
@@ -255,6 +267,7 @@ src/
     seed.ts
   proxy.ts              redirects logged-out visitors to /login
 public/t.js             built tracking script (do not edit; see src/tracker/t.ts)
+public/edit-frame.js    built editor-frame script (do not edit; see src/editor-frame/frame.ts)
 drizzle/                generated SQL migrations (commit these)
 ```
 

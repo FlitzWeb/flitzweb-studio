@@ -1,12 +1,18 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-/** Re-fetches server data every `seconds` while the tab is visible. */
-export function AutoRefresh({ seconds = 60 }: { seconds?: number }) {
+/**
+ * Re-fetches server data every `seconds` while the tab is visible. Not on a path ending in one of
+ * `pauseOn` (the Aanpassen tab: a refresh there would reload the page you are typing in).
+ */
+export function AutoRefresh({ seconds = 60, pauseOn = [] }: { seconds?: number; pauseOn?: string[] }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const paused = pauseOn.some((end) => pathname.endsWith(end));
   useEffect(() => {
+    if (paused) return;
     const tick = () => {
       if (document.visibilityState === "visible") router.refresh();
     };
@@ -16,6 +22,6 @@ export function AutoRefresh({ seconds = 60 }: { seconds?: number }) {
       clearInterval(id);
       document.removeEventListener("visibilitychange", tick);
     };
-  }, [router, seconds]);
+  }, [router, seconds, paused]);
   return null;
 }

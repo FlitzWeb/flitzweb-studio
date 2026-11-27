@@ -120,6 +120,20 @@ export async function conceptState(repo: string, live: string, concept: string):
 
 const refPath = (branch: string) => `heads/${branch.split("/").map(encodeURIComponent).join("/")}`;
 
+/** One JSON call to a repo's API (no caching), with the status and the parsed body when it succeeded. */
+async function repoCall(repo: string, path: string, init?: { method: string; body: unknown }) {
+  const res = await fetch(`${API}/repos/${repo}/${path}`, {
+    method: init?.method ?? "GET",
+    headers: { ...headers(), ...(init ? { "Content-Type": "application/json" } : {}) },
+    body: init ? JSON.stringify(init.body) : undefined,
+    cache: "no-store",
+    signal: AbortSignal.timeout(10000),
+  });
+  return { status: res.status, data: res.ok ? ((await res.json()) as Record<string, unknown>) : null };
+}
+
+const denied = (status: number) => status === 401 || status === 403 || status === 404;
+
 /**
  * Makes `branch` hold exactly what `target` holds, as one new commit on top of `branch` whose parents
  * are both branches. Nothing is force-pushed: the old work stays in the history, and because `target`
@@ -128,17 +142,7 @@ const refPath = (branch: string) => `heads/${branch.split("/").map(encodeURIComp
 export async function matchBranch(repo: string, branch: string, target: string, message: string): Promise<MergeResult> {
   if (!hasGithubToken()) return { ok: false, reason: "no-token" };
   if (!VALID_REPO.test(repo)) return { ok: false, reason: "error" };
-  const call = async (path: string, init?: { method: string; body: unknown }) => {
-    const res = await fetch(`${API}/repos/${repo}/${path}`, {
-      method: init?.method ?? "GET",
-      headers: { ...headers(), ...(init ? { "Content-Type": "application/json" } : {}) },
-      body: init ? JSON.stringify(init.body) : undefined,
-      cache: "no-store",
-      signal: AbortSignal.timeout(10000),
-    });
-    return { status: res.status, data: res.ok ? ((await res.json()) as Record<string, unknown>) : null };
-  };
-  const denied = (status: number) => status === 401 || status === 403 || status === 404;
+  const call = (path: string, init?: { method: string; body: unknown }) => repoCall(repo, path, init);
   try {
     const [from, to] = await Promise.all([call(`git/ref/${refPath(branch)}`), call(`git/ref/${refPath(target)}`)]);
     if (!from.data || !to.data) return { ok: false, reason: denied(from.status) || denied(to.status) ? "no-access" : "error" };
@@ -198,6 +202,101 @@ export async function mergeBranch(repo: string, base: string, head: string, mess
     if (res.status === 409) return { ok: false, reason: "conflict" };
     if (res.status === 401 || res.status === 403 || res.status === 404) return { ok: false, reason: "no-access" };
     return { ok: false, reason: "error" };
+  } catch {
+    return { ok: false, reason: "error" };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Reading files and committing them (the Aanpassen tab, features/editor).
+
+const VALID_BRANCH = /^[\w.-]+(?:\/[\w.-]+)*$/;
+export const isValidBranch = (branch: string) => VALID_BRANCH.test(branch) && !branch.includes("..");
+
+/** The commit a branch points at now, or null (no such branch, no access, GitHub down). */
+export async function branchHead(repo: string, branch: string): Promise<string | null> {
+  if (!VALID_REPO.test(repo) || !isValidBranch(branch)) return null;
+  try {
+    const ref = await repoCall(repo, `git/ref/${refPath(branch)}`);
+    const sha = (ref.data?.object as { sha?: string } | undefined)?.sha;
+    return typeof sha === "string" ? sha : null;
+  } catch {
+    return null;
+  }
+}
+
+const VALID_SHA = /^[0-9a-f]{40}$/;
+
+export type RepoFile = { ok: true; bytes: ArrayBuffer } | { ok: false; reason: "not-found" | "no-access" | "error" };
+
+/**
+ * One file of a repo at an exact commit. A commit never changes, so the answer is kept in Next's data
+ * cache. With GITHUB_TOKEN this uses the API (private repos too); without it the public raw host,
+ * which has no tight rate limit.
+ */
+export async function readRepoFile(repo: string, sha: string, path: string): Promise<RepoFile> {
+  if (!VALID_REPO.test(repo) || !VALID_SHA.test(sha)) return { ok: false, reason: "error" };
+  const filePath = path.split("/").map(encodeURIComponent).join("/");
+  const url = hasGithubToken()
+    ? `${API}/repos/${repo}/contents/${filePath}?ref=${sha}`
+    : `https://raw.githubusercontent.com/${repo}/${sha}/${filePath}`;
+  try {
+    const res = await fetch(url, {
+      headers: hasGithubToken() ? { ...headers(), Accept: "application/vnd.github.raw+json" } : { "User-Agent": "flitzweb-studio" },
+      cache: "force-cache",
+      signal: AbortSignal.timeout(10000),
+    });
+    if (res.status === 404) return { ok: false, reason: "not-found" };
+    if (res.status === 401 || res.status === 403) return { ok: false, reason: "no-access" };
+    if (!res.ok) return { ok: false, reason: "error" };
+    return { ok: true, bytes: await res.arrayBuffer() };
+  } catch {
+    return { ok: false, reason: "error" };
+  }
+}
+
+/** The same, as text (HTML, CSS, JS), or null when it can't be read. */
+export async function readRepoText(repo: string, sha: string, path: string): Promise<string | null> {
+  const file = await readRepoFile(repo, sha, path);
+  return file.ok ? new TextDecoder().decode(file.bytes) : null;
+}
+
+export type CommitResult =
+  | { ok: true; sha: string }
+  | { ok: false; reason: "no-token" | "moved" | "no-access" | "error" };
+
+/**
+ * Writes text files as one new commit on `branch`, on top of `parent`. The branch only moves if it
+ * still points at `parent` (no force), so work pushed in the meantime is never overwritten: that
+ * comes back as "moved" and the caller decides what to do.
+ */
+export async function commitFiles(
+  repo: string,
+  branch: string,
+  parent: string,
+  files: { path: string; content: string }[],
+  message: string,
+): Promise<CommitResult> {
+  if (!hasGithubToken()) return { ok: false, reason: "no-token" };
+  if (!VALID_REPO.test(repo) || !isValidBranch(branch) || !VALID_SHA.test(parent)) return { ok: false, reason: "error" };
+  const call = (path: string, init?: { method: string; body: unknown }) => repoCall(repo, path, init);
+  try {
+    const parentCommit = await call(`git/commits/${parent}`);
+    if (!parentCommit.data) return { ok: false, reason: denied(parentCommit.status) ? "no-access" : "error" };
+    const tree = await call("git/trees", {
+      method: "POST",
+      body: {
+        base_tree: (parentCommit.data.tree as { sha: string }).sha,
+        tree: files.map((f) => ({ path: f.path, mode: "100644", type: "blob", content: f.content })),
+      },
+    });
+    if (!tree.data) return { ok: false, reason: denied(tree.status) ? "no-access" : "error" };
+    const created = await call("git/commits", { method: "POST", body: { message, tree: tree.data.sha, parents: [parent] } });
+    if (!created.data) return { ok: false, reason: denied(created.status) ? "no-access" : "error" };
+    const moved = await call(`git/refs/${refPath(branch)}`, { method: "PATCH", body: { sha: created.data.sha, force: false } });
+    if (moved.status === 422) return { ok: false, reason: "moved" };
+    if (!moved.data) return { ok: false, reason: denied(moved.status) ? "no-access" : "error" };
+    return { ok: true, sha: created.data.sha as string };
   } catch {
     return { ok: false, reason: "error" };
   }

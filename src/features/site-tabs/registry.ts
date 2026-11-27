@@ -5,6 +5,7 @@
 import type { ComponentType } from "react";
 import type { SiteWithClient } from "@/lib/sites";
 import { ContactTab } from "./ContactTab";
+import { EditTab } from "./EditTab";
 import { EventsTab } from "./EventsTab";
 import { GoogleTab } from "./GoogleTab";
 import { LiveTab } from "./LiveTab";
@@ -46,6 +47,7 @@ export const siteTabs: SiteTab[] = [
     visible: (site) => site.client.billingType === "paying",
   },
   { slug: "versies", label: "Versies", component: VersionsTab },
+  { slug: "aanpassen", label: "Aanpassen", component: EditTab },
   { slug: "stats", label: "Stats", component: StatsTab },
   { slug: "google", label: "Google", component: GoogleTab },
   { slug: "maandrapport", label: "Maandrapport", component: SummaryTab },

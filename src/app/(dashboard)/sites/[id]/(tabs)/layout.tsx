@@ -32,7 +32,7 @@ export default async function SiteLayout({
 
   return (
     <>
-      <AutoRefresh seconds={60} />
+      <AutoRefresh seconds={60} pauseOn={["/aanpassen"]} />
       <Link href="/" className="back-link">
         ← Overzicht
       </Link>

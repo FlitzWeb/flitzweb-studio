@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Minified build output of src/tracker/t.ts.
     "public/t.js",
+    // Minified build output of src/editor-frame/frame.ts.
+    "public/edit-frame.js",
   ]),
 ]);
 
