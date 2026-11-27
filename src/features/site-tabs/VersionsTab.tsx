@@ -249,17 +249,26 @@ async function LooseBranches({ site, repo }: { site: SiteWithClient; repo: strin
         De Studio toont alleen wat op “{site.conceptBranch}” staat, want daar hoort het vaste adres voor de klant bij. Dit werk staat op een
         eigen branch en is dus nog niet te zien in het concept.
       </p>
-      <ul className={styles.changes}>
-        {loose.map((b) => (
-          <li key={b.name}>
+      {loose.map((b) => (
+        <div key={b.name} className={styles.branch}>
+          <div className={styles.head}>
             <span>
-              <strong>{b.name}</strong> · {b.ahead} {b.ahead === 1 ? "wijziging" : "wijzigingen"}
-              {b.last && `: ${b.last}`}
+              <strong>{b.name}</strong> · {plural(b.commits.length, "wijziging", "wijzigingen")} ·{" "}
+              {plural(b.files, "bestand", "bestanden")} anders dan live
             </span>
             {hasGithubToken() && <MoveToConcept siteId={site.id} branch={b.name} />}
-          </li>
-        ))}
-      </ul>
+          </div>
+          <ul className={styles.changes}>
+            {b.commits.slice(0, 12).map((c) => (
+              <li key={c.sha}>
+                <span>{c.message}</span>
+                {c.date && <time dateTime={c.date}>{formatDate(c.date)}</time>}
+              </li>
+            ))}
+          </ul>
+          {b.commits.length > 12 && <p className={styles.note}>En nog {b.commits.length - 12} eerdere wijzigingen</p>}
+        </div>
+      ))}
       {!hasGithubToken() && (
         <p className={styles.note}>
           Zet het op het concept door de branch in “{site.conceptBranch}” te mergen en te pushen (of push je werk direct naar “
@@ -284,7 +293,7 @@ async function looseBranches(repo: string, conceptBranch: string) {
   return compared.flatMap(({ name, vsConcept, vsLive }) =>
     // Stale branches (nothing new for the concept, or already live) stay out of sight.
     vsConcept.ok && vsConcept.ahead > 0 && vsLive.ok && vsLive.commits.length > 0
-      ? [{ name, ahead: vsLive.commits.length, last: vsLive.commits[0]?.message ?? null }]
+      ? [{ name, commits: vsLive.commits, files: vsLive.files.length }]
       : [],
   );
 }

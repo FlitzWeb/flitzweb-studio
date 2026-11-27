@@ -85,6 +85,14 @@
   margin-top: var(--space-4);
 }
 
+/* One block per branch in "Wijzigingen op een andere branch": its name and button, then its changes. */
+.branch {
+  margin-top: var(--space-4);
+}
+.branch .head {
+  font-size: 0.875rem;
+}
+
 .changes {
   list-style: none;
   margin: var(--space-3) 0 0;
